@@ -50,3 +50,7 @@ Le schéma est documenté dans [apps/api/prisma/schema.prisma](apps/api/prisma/s
 - Le QR est généré et vérifié avec HMAC SHA-256 via une clé `QR_SECRET` / `APP_SECRET`.
 
 Les intégrations de paiement sont des stubs sandbox : remplacer les appels dans le module de paiement avant production.
+
+# TiketHaiti
+
+Une plateforme de vente de ticket d’événement.
