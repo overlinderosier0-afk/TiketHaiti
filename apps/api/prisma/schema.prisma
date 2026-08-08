@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  MONCASH
+  NATCASH
+}
+
+enum PaymentProviderStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  phone        String?
+  role         UserRole @default(USER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  orders  Order[]
+  tickets Ticket[]
+
+  @@map("users")
+}
+
+model City {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  events Event[]
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  events Event[]
+}
+
+model Event {
+  id               String      @id @default(uuid())
+  title            String
+  slug             String      @unique
+  description      String
+  bannerUrl        String?     @map("banner_url")
+  gallery          Json?       @default("[]")
+  cityId           Int         @map("city_id")
+  categoryId       Int         @map("category_id")
+  address          String?
+  latitude         Float?
+  longitude        Float?
+  eventDate        DateTime    @map("event_date")
+  doorsOpen        DateTime?   @map("doors_open")
+  artistName       String?     @map("artist_name")
+  price            Float
+  currency         String      @default("HTG")
+  capacity         Int
+  ticketsAvailable Int         @default(0) @map("tickets_available")
+  status           EventStatus @default(DRAFT)
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  city     City     @relation(fields: [cityId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  tickets  Ticket[]
+
+  @@map("events")
+}
+
+model Order {
+  id               String        @id @default(uuid())
+  userId           String        @map("user_id")
+  total            Float
+  paymentMethod    String?       @map("payment_method")
+  paymentStatus    PaymentStatus @default(PENDING) @map("payment_status")
+  paymentReference String?       @map("payment_reference")
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  tickets  Ticket[]
+  payments Payment[]
+
+  @@map("orders")
+}
+
+model Ticket {
+  id           String    @id @default(uuid())
+  orderId      String    @map("order_id")
+  eventId      String    @map("event_id")
+  userId       String    @map("user_id")
+  qrPayload    String    @map("qr_payload")
+  qrSignature  String    @map("qr_signature")
+  qrImage      String?   @map("qr_image")
+  checkedIn    Boolean   @default(false) @map("checked_in")
+  checkedInAt  DateTime? @map("checked_in_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@map("tickets")
+}
+
+model Payment {
+  id                   Int        @id @default(autoincrement())
+  orderId              String     @unique @map("order_id")
+  provider             PaymentProvider
+  transactionReference String?    @unique @map("transaction_reference")
+  amount               Float
+  currency             String     @default("HTG")
+  status               PaymentProviderStatus @default(PENDING)
+  webhookPayload       Json?      @map("webhook_payload")
+  createdAt            DateTime   @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+

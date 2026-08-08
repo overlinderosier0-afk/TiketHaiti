@@ -1,0 +1,14 @@
+{
+  "name": "tike-ayiti",
+  "private": true,
+  "packageManager": "pnpm@9.15.5",
+  "scripts": {
+    "dev": "corepack pnpm --parallel --filter @tike-ayiti/api --filter @tike-ayiti/web dev",
+    "build": "corepack pnpm -r build",
+    "test": "corepack pnpm --filter @tike-ayiti/api test",
+    "db:migrate": "corepack pnpm --filter @tike-ayiti/api prisma:migrate"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

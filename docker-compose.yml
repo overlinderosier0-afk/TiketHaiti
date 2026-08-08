@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tike
+      POSTGRES_PASSWORD: tike
+      POSTGRES_DB: tikeayiti
+    ports: ["5432:5432"]
+    volumes: ["tike_pg:/var/lib/postgresql/data"]
+  api:
+    build: ./apps/api
+    env_file: .env
+    depends_on: [postgres]
+    ports: ["3001:3001"]
+volumes:
+  tike_pg:
