@@ -1,10 +1,10 @@
 import { Module, Controller, Get, Post, Body, Param, Req, UseGuards, Headers, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { IsString } from 'class-validator';
 import { Request } from 'express';
-import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
 import { QrService } from '../tickets/qr.service';
+import { PaymentSettlementService, Provider } from './payment-settlement.service';
 import { verifyWebhookSignature } from './webhook-signature';
 
 class InitiatePaymentDto {
@@ -13,21 +13,25 @@ class InitiatePaymentDto {
 
 const PROVIDER_CONFIG = {
   MONCASH: {
-    checkoutBase: () => process.env.MONCASH_API_URL || 'https://sandbox.moncashbutton.digicelgroup.com',
-    secret: () => process.env.MONCASH_WEBHOOK_SECRET || ''
+    secret: () => process.env.WEBHOOK_MONCASH_SECRET || process.env.WEBHOOK_SECRET || ''
   },
   NATCASH: {
-    checkoutBase: () => process.env.NATCASH_API_URL || 'https://sandbox.natcash.com',
-    secret: () => process.env.NATCASH_WEBHOOK_SECRET || ''
+    secret: () => process.env.WEBHOOK_NATCASH_SECRET || process.env.WEBHOOK_SECRET || ''
   }
 } as const;
 
-type Provider = keyof typeof PROVIDER_CONFIG;
-
 @Controller('payments')
 class PaymentsController {
-  constructor(private prisma: PrismaService, private qr: QrService) {}
+  constructor(private prisma: PrismaService, private settlement: PaymentSettlementService) {}
 
+  /**
+   * Le client choisit MonCash/NatCash au checkout. En l'absence d'API
+   * marchande officielle, le paiement se fait par transfert manuel :
+   * on renvoie le numéro marchand configuré et la référence à recopier
+   * dans la note du transfert. La commande passe PAID quand l'admin
+   * valide la réception (ou quand un webhook officiel arrivera : même
+   * chemin de règlement via PaymentSettlementService).
+   */
   @Post('moncash/initiate')
   @UseGuards(JwtGuard)
   async initiateMonCash(@Body() dto: InitiatePaymentDto, @Req() req: any) {
@@ -48,17 +52,61 @@ class PaymentsController {
     if (order.paymentStatus !== 'PENDING') {
       throw new BadRequestException('Cette commande est déjà traitée');
     }
+    if (order.expiresAt && order.expiresAt < new Date()) {
+      await this.settlement.cancelOrder(order.id);
+      throw new BadRequestException('Délai de paiement dépassé : la commande a été annulée, veuillez recommencer');
+    }
 
-    // NOTE : intégration sandbox. En production, appeler ici l'API du
-    // fournisseur (création de la transaction, redirection vers leur page
-    // de paiement). Le webhook finalise la commande côté serveur.
+    const merchantNumber = this.settlement.merchantNumber(provider);
+
+    // Mémorise le fournisseur choisi, (ré)arme l'expiration et prépare la
+    // ligne de paiement — la validation arrivera plus tard (admin/webhook).
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          paymentMethod: provider,
+          expiresAt: order.expiresAt ?? this.settlement.expiryFromNow()
+        }
+      });
+      const existing = order.payments[0];
+      if (existing) {
+        await tx.payment.update({
+          where: { id: existing.id },
+          data: { provider, status: 'PENDING' }
+        });
+      } else {
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            provider,
+            amount: order.total,
+            currency: 'HTG',
+            status: 'PENDING'
+          }
+        });
+      }
+    });
+
+    const fresh = await this.prisma.order.findUnique({ where: { id: order.id } });
+
     return {
       provider,
       orderId: order.id,
       amount: order.total,
       currency: 'HTG',
-      checkoutUrl: `${PROVIDER_CONFIG[provider].checkoutBase()}/pay?order=${order.paymentReference}`,
-      status: 'PENDING'
+      status: 'PENDING',
+      expiresAt: fresh?.expiresAt ?? null,
+      manualPayment: {
+        configured: merchantNumber.length > 0,
+        merchantNumber,
+        referenceNote: order.paymentReference,
+        instructions:
+          `Envoyez ${order.total.toLocaleString('fr-FR')} HTG au ${merchantNumber || '(numéro à configurer)'} ` +
+          `via ${provider === 'MONCASH' ? 'MonCash' : 'NatCash'}, puis recopiez exactement la référence ` +
+          `${order.paymentReference} dans la note du transfert. Notre équipe vérifie la réception et vos ` +
+          `billets sont émis automatiquement.`
+      }
     };
   }
 
@@ -75,6 +123,8 @@ class PaymentsController {
   @Get('status/:orderId')
   @UseGuards(JwtGuard)
   async status(@Param('orderId') orderId: string, @Req() req: any) {
+    // Expiration paresseuse : le polling du checkout déclenche le nettoyage.
+    await this.settlement.expireStaleOrders(req.user.sub);
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { payments: true } });
     if (!order || order.userId !== req.user.sub) {
       throw new UnauthorizedException('Commande inaccessible');
@@ -83,7 +133,9 @@ class PaymentsController {
       orderId,
       paymentStatus: order.paymentStatus,
       paymentProvider: order.payments[0]?.provider ?? null,
-      providerStatus: order.payments[0]?.status ?? null
+      providerStatus: order.payments[0]?.status ?? null,
+      paymentReference: order.paymentReference,
+      expiresAt: order.expiresAt
     };
   }
 
@@ -103,94 +155,32 @@ class PaymentsController {
       throw new BadRequestException('Webhook invalide : transactionReference et paymentReference requis');
     }
 
-    // 2) Idempotence : une commande déjà traitée ne déclenche rien de plus.
+    // 2) Idempotence + règlement via le chemin partagé (même code que la
+    // validation manuelle admin).
     const order = await this.prisma.order.findUnique({
-      where: { paymentReference: payload.paymentReference },
-      include: { payments: true, tickets: true }
+      where: { paymentReference: payload.paymentReference }
     });
-    if (!order || order.paymentStatus !== 'PENDING') {
+    if (!order) {
       return { received: true, idempotent: true, status: 'ignored' };
     }
 
     const providerStatus = String(payload.status || 'SUCCEEDED').toUpperCase();
     const succeeded = providerStatus === 'SUCCEEDED' || providerStatus === 'SUCCESS' || providerStatus === 'PAID';
 
-    await this.prisma.$transaction(async (tx) => {
-      const payment = order.payments[0];
-      if (payment) {
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: succeeded ? 'SUCCEEDED' : 'FAILED',
-            transactionReference: payload.transactionReference,
-            webhookPayload: payload
-          }
-        });
-      } else {
-        // Le fournisseur n'avait pas été choisi à la création de la
-        // commande : on enregistre le paiement maintenant.
-        await tx.payment.create({
-          data: {
-            orderId: order.id,
-            provider,
-            amount: order.total,
-            currency: 'HTG',
-            status: succeeded ? 'SUCCEEDED' : 'FAILED',
-            transactionReference: payload.transactionReference,
-            webhookPayload: payload
-          }
-        });
-      }
-
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          paymentStatus: succeeded ? 'PAID' : 'FAILED',
-          paymentMethod: order.paymentMethod ?? provider
-        }
-      });
-
-      if (succeeded) {
-        // Émission des billets avec QR signé HMAC.
-        for (let i = 0; i < order.quantity; i++) {
-          const ticketId = `${order.id}-T${i + 1}`;
-          const qrPayload = {
-            ticketId,
-            orderId: order.id,
-            eventId: order.eventId,
-            userId: order.userId,
-            issuedAt: new Date().toISOString()
-          };
-          const { signature: qrSignature } = this.qr.signPayload(qrPayload);
-          const qrImage = await QRCode.toDataURL(JSON.stringify({ ...qrPayload, signature: qrSignature }));
-
-          await tx.ticket.create({
-            data: {
-              id: ticketId,
-              orderId: order.id,
-              eventId: order.eventId,
-              userId: order.userId,
-              qrPayload: JSON.stringify(qrPayload),
-              qrSignature,
-              qrImage
-            }
-          });
-        }
-      } else {
-        // Échec : on libère les places réservées.
-        await tx.event.update({
-          where: { id: order.eventId },
-          data: { ticketsAvailable: { increment: order.quantity } }
-        });
-      }
+    const result = await this.settlement.settleOrder(order.id, {
+      provider,
+      succeeded,
+      transactionReference: payload.transactionReference,
+      payload
     });
 
-    return { received: true, idempotent: true, status: succeeded ? 'paid' : 'failed' };
+    return { received: true, idempotent: true, status: result.settled ? result.status : 'ignored' };
   }
 }
 
 @Module({
   controllers: [PaymentsController],
-  providers: [PrismaService, QrService]
+  providers: [PrismaService, QrService, PaymentSettlementService],
+  exports: [PaymentSettlementService]
 })
 export class PaymentsModule {}

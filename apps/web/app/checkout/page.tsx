@@ -11,8 +11,40 @@ interface OrderDetail {
   quantity: number;
   paymentStatus: string;
   paymentReference: string | null;
+  expiresAt: string | null;
   event: { title: string; eventDate: string; price: number; city: { name: string } };
   payments: { id: string; provider: string; status: string }[];
+}
+
+interface ManualPayment {
+  configured: boolean;
+  merchantNumber: string;
+  referenceNote: string | null;
+  instructions: string;
+}
+
+interface InitiateResponse {
+  provider: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  status: string;
+  expiresAt: string | null;
+  manualPayment: ManualPayment;
+}
+
+function copyText(text: string, done: () => void) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(done).catch(done);
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    done();
+  }
 }
 
 function CheckoutForm() {
@@ -23,8 +55,8 @@ function CheckoutForm() {
   const [error, setError] = useState('');
   const [provider, setProvider] = useState<'moncash' | 'natcash'>('moncash');
   const [busy, setBusy] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState('');
-  const [notice, setNotice] = useState('');
+  const [manual, setManual] = useState<ManualPayment | null>(null);
+  const [copied, setCopied] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(() => {
@@ -49,17 +81,14 @@ function CheckoutForm() {
     if (!orderId) return;
     setBusy(true);
     setError('');
-    setNotice('');
     try {
-      const res = await api<{ checkoutUrl: string; provider: string }>(
+      const res = await api<InitiateResponse>(
         `/payments/${provider}/initiate`,
         { method: 'POST', body: JSON.stringify({ orderId }) }
       );
-      setCheckoutUrl(res.checkoutUrl);
-      setNotice(
-        `Paiement initié via ${provider === 'moncash' ? 'MonCash' : 'NatCash'} (commande ${orderId}). ` +
-        `Mode sandbox : le webhook simulé marque la commande payée. Cette page se rafraîchit automatiquement.`
-      );
+      setManual(res.manualPayment);
+      // Rafraîchit l'expiration affichée.
+      load();
     } catch (e: any) {
       setError(e?.message || 'Paiement impossible');
     } finally {
@@ -75,6 +104,9 @@ function CheckoutForm() {
       </section>
     );
   }
+
+  const providerLabel = provider === 'moncash' ? 'MonCash' : 'NatCash';
+  const expired = order?.paymentStatus === 'CANCELLED';
 
   return (
     <section className="container max-w-2xl py-16">
@@ -96,7 +128,14 @@ function CheckoutForm() {
             Statut : <span className={order.paymentStatus === 'PAID' ? 'text-emerald-600' : 'text-amber-600'}>{order.paymentStatus}</span>
           </p>
 
-          {order.paymentStatus !== 'PAID' && (
+          {expired && (
+            <div className="mt-6 rounded-2xl bg-red-50 p-4">
+              <p className="font-bold text-red-700">Délai de paiement dépassé : cette commande a été annulée et les places libérées.</p>
+              <Link href="/events" className="mt-2 inline-block font-black text-brand underline">Choisir un autre événement</Link>
+            </div>
+          )}
+
+          {!expired && order.paymentStatus === 'PENDING' && !manual && (
             <>
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <button
@@ -117,19 +156,55 @@ function CheckoutForm() {
                 disabled={busy}
                 className="mt-5 w-full rounded-full bg-brand p-3 font-black text-white transition hover:bg-[#ba5521] disabled:opacity-60"
               >
-                {busy ? 'Initialisation…' : `Payer avec ${provider === 'moncash' ? 'MonCash' : 'NatCash'}`}
+                {busy ? 'Initialisation…' : `Payer avec ${providerLabel}`}
               </button>
-              {notice && (
-                <div className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm">
-                  <p className="font-bold">{notice}</p>
-                  {checkoutUrl && (
-                    <a href={checkoutUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block font-black text-brand underline">
-                      Ouvrir la page de paiement sandbox ↗
-                    </a>
-                  )}
-                </div>
-              )}
             </>
+          )}
+
+          {!expired && order.paymentStatus === 'PENDING' && manual && (
+            <div className="mt-6 rounded-2xl bg-amber-50 p-5">
+              {!manual.configured ? (
+                <p className="font-bold text-red-700">
+                  Paiement manuel non configuré pour le moment. Contactez le support pour finaliser votre commande.
+                </p>
+              ) : (
+                <>
+                  <p className="font-black text-lg">Payez avec {providerLabel}</p>
+                  <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
+                    <li>
+                      Envoyez <strong>{order.total.toLocaleString('fr-FR')} HTG</strong> au numéro{' '}
+                      <button
+                        onClick={() => copyText(manual.merchantNumber, () => setCopied('number'))}
+                        className="rounded-lg bg-white px-2 py-1 font-black text-brand shadow-sm"
+                        title="Copier le numéro"
+                      >
+                        {manual.merchantNumber} {copied === 'number' ? '✓' : '⧉'}
+                      </button>{' '}
+                      via {providerLabel}.
+                    </li>
+                    <li>
+                      Dans la <strong>note du transfert</strong>, recopiez exactement la référence{' '}
+                      <button
+                        onClick={() => copyText(manual.referenceNote || '', () => setCopied('ref'))}
+                        className="rounded-lg bg-white px-2 py-1 font-black text-brand shadow-sm"
+                        title="Copier la référence"
+                      >
+                        {manual.referenceNote} {copied === 'ref' ? '✓' : '⧉'}
+                      </button>
+                    </li>
+                    <li>
+                      Notre équipe vérifie la réception : vos billets sont émis automatiquement.
+                      Cette page se rafraîchit toute seule.
+                    </li>
+                  </ol>
+                  {order.expiresAt && (
+                    <p className="mt-3 text-xs font-bold text-slate-500">
+                      Paiement attendu avant le {new Date(order.expiresAt).toLocaleString('fr-FR')}, sinon la commande est annulée.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
       )}

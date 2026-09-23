@@ -1,8 +1,10 @@
-import { Module, Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Module, Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
 import { IsString, IsOptional, IsInt, Min, IsDateString } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
 import { AdminGuard } from '../auth/admin.guard';
+import { PaymentsModule } from '../payments/payments.module';
+import { PaymentSettlementService, Provider } from '../payments/payment-settlement.service';
 import { parsePage, pageResult } from '../common/pagination';
 
 class AdminEventDto {
@@ -20,10 +22,14 @@ class AdminEventDto {
   @IsInt() @Min(1) capacity!: number;
 }
 
+class ConfirmOrderDto {
+  @IsOptional() @IsString() transactionReference?: string;
+}
+
 @Controller('admin')
 @UseGuards(JwtGuard, AdminGuard)
 class AdminController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private settlement: PaymentSettlementService) {}
 
   @Get('events')
   async events() {
@@ -78,6 +84,72 @@ class AdminController {
     });
   }
 
+  /**
+   * Commandes en attente de paiement manuel : l'admin y vérifie les
+   * transferts MonCash/NatCash reçus (montant + référence en note)
+   * puis confirme ou annule.
+   */
+  @Get('orders/pending')
+  async pendingOrders() {
+    return this.prisma.order.findMany({
+      where: { paymentStatus: 'PENDING' },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        payments: true,
+        event: { select: { id: true, title: true, eventDate: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+  }
+
+  /**
+   * Validation manuelle : l'admin a vu le transfert arriver sur son
+   * MonCash/NatCash. Utilise le même chemin de règlement que les
+   * webhooks — les billets sont émis automatiquement.
+   */
+  @Post('orders/:id/confirm')
+  async confirmOrder(@Param('id') id: string, @Body() dto: ConfirmOrderDto, @Req() req: any) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException('Commande introuvable');
+    if (order.paymentStatus !== 'PENDING') {
+      throw new BadRequestException('Cette commande est déjà traitée');
+    }
+    if (order.expiresAt && order.expiresAt < new Date()) {
+      await this.settlement.cancelOrder(id);
+      throw new BadRequestException('Commande expirée : elle a été annulée');
+    }
+
+    const provider = (order.paymentMethod as Provider | null) ?? 'MONCASH';
+    const result = await this.settlement.settleOrder(id, {
+      provider,
+      succeeded: true,
+      transactionReference: dto.transactionReference?.trim() || null,
+      payload: {
+        manual: true,
+        confirmedBy: req.user.sub,
+        confirmedAt: new Date().toISOString(),
+        transactionReference: dto.transactionReference?.trim() || null
+      },
+      confirmedBy: req.user.sub
+    });
+    return { orderId: id, ...result };
+  }
+
+  /** Annule une commande en attente et libère les places réservées. */
+  @Post('orders/:id/cancel')
+  async cancelOrder(@Param('id') id: string) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException('Commande introuvable');
+    return { orderId: id, ...(await this.settlement.cancelOrder(id)) };
+  }
+
+  /** Purge les commandes impayées dont le délai est dépassé. */
+  @Post('orders/sweep-expired')
+  async sweepExpired() {
+    return this.settlement.expireStaleOrders();
+  }
+
   @Get('payments')
   async payments() {
     return this.prisma.payment.findMany({ include: { order: true }, orderBy: { createdAt: 'desc' }, take: 50 });
@@ -117,5 +189,5 @@ class AdminController {
   }
 }
 
-@Module({ controllers: [AdminController], providers: [PrismaService] })
+@Module({ imports: [PaymentsModule], controllers: [AdminController], providers: [PrismaService] })
 export class AdminModule {}

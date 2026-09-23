@@ -107,6 +107,7 @@ model Order {
   paymentMethod    String?       @map("payment_method")
   paymentStatus    PaymentStatus @default(PENDING) @map("payment_status")
   paymentReference String?       @unique @map("payment_reference")
+  expiresAt        DateTime?     @map("expires_at")
   createdAt        DateTime      @default(now()) @map("created_at")
 
   user     User      @relation(fields: [userId], references: [id])
@@ -145,6 +146,7 @@ model Payment {
   currency             String     @default("HTG")
   status               PaymentProviderStatus @default(PENDING)
   webhookPayload       Json?      @map("webhook_payload")
+  confirmedBy          String?    @map("confirmed_by")
   createdAt            DateTime   @default(now()) @map("created_at")
 
   order Order @relation(fields: [orderId], references: [id])

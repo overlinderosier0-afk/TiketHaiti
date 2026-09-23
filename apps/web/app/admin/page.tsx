@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 
@@ -24,6 +24,19 @@ interface AdminEvent {
   city: { name: string };
 }
 
+interface PendingOrder {
+  id: string;
+  quantity: number;
+  total: number;
+  paymentMethod: string | null;
+  paymentReference: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  user: { firstName: string; lastName: string; email: string; phone: string | null };
+  payments: { provider: string; status: string; transactionReference: string | null }[];
+  event: { title: string; eventDate: string };
+}
+
 export default function AdminPage() {
   const { user, loading } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -34,8 +47,16 @@ export default function AdminPage() {
   const [checkinCode, setCheckinCode] = useState('');
   const [checkinMsg, setCheckinMsg] = useState('');
   const [checkinBusy, setCheckinBusy] = useState(false);
+  const [pending, setPending] = useState<PendingOrder[]>([]);
+  const [pendingMsg, setPendingMsg] = useState('');
+  const [confirmRef, setConfirmRef] = useState<Record<string, string>>({});
 
   const isAdmin = user?.role === 'ADMIN';
+
+  const loadPending = useCallback(() => {
+    if (!isAdmin) return;
+    api<PendingOrder[]>('/admin/orders/pending').then(setPending).catch(() => {});
+  }, [isAdmin]);
 
   useEffect(() => {
     if (loading || !isAdmin) return;
@@ -45,7 +66,8 @@ export default function AdminPage() {
     api<AdminEvent[]>('/admin/events')
       .then(setEvents)
       .catch(() => {});
-  }, [loading, isAdmin]);
+    loadPending();
+  }, [loading, isAdmin, loadPending]);
 
   async function createEvent(e: FormEvent) {
     e.preventDefault();
@@ -86,6 +108,44 @@ export default function AdminPage() {
       setCheckinMsg(`❌ ${err?.message || 'Échec du check-in'}`);
     } finally {
       setCheckinBusy(false);
+    }
+  }
+
+  async function confirmPending(id: string) {
+    setPendingMsg('');
+    try {
+      await api(`/admin/orders/${id}/confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ transactionReference: confirmRef[id]?.trim() || undefined })
+      });
+      setPendingMsg(`✅ Commande ${id.slice(0, 8)}… confirmée : billets émis.`);
+      setConfirmRef((r) => ({ ...r, [id]: '' }));
+      loadPending();
+    } catch (err: any) {
+      setPendingMsg(`❌ ${err?.message || 'Confirmation impossible'}`);
+    }
+  }
+
+  async function cancelPending(id: string) {
+    if (!window.confirm('Annuler cette commande et libérer les places ?')) return;
+    setPendingMsg('');
+    try {
+      await api(`/admin/orders/${id}/cancel`, { method: 'POST' });
+      setPendingMsg(`Commande ${id.slice(0, 8)}… annulée, places libérées.`);
+      loadPending();
+    } catch (err: any) {
+      setPendingMsg(`❌ ${err?.message || 'Annulation impossible'}`);
+    }
+  }
+
+  async function sweepExpired() {
+    setPendingMsg('');
+    try {
+      const res = await api<{ expired: number }>('/admin/orders/sweep-expired', { method: 'POST' });
+      setPendingMsg(`${res.expired} commande(s) expirée(s) annulée(s).`);
+      loadPending();
+    } catch (err: any) {
+      setPendingMsg(`❌ ${err?.message || 'Purge impossible'}`);
     }
   }
 
@@ -176,6 +236,60 @@ export default function AdminPage() {
           {checkinMsg && <p className="mt-4 font-bold">{checkinMsg}</p>}
         </div>
       </div>
+
+      <h2 className="mt-10 text-2xl font-black">Paiements en attente</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Vérifiez le transfert reçu sur votre MonCash/NatCash (montant + référence en note), puis confirmez.
+        La confirmation émet les billets automatiquement.
+      </p>
+      {pendingMsg && <p className="mt-3 font-bold">{pendingMsg}</p>}
+      <div className="mt-4 space-y-3">
+        {pending.map((o) => (
+          <div key={o.id} className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="font-black">{o.event.title} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG</p>
+                <p className="text-sm text-slate-500">
+                  {o.user.firstName} {o.user.lastName} ({o.user.email}{o.user.phone ? ` · ${o.user.phone}` : ''})
+                </p>
+                <p className="mt-1 text-sm">
+                  <span className="rounded bg-slate-100 px-2 py-0.5 font-mono font-black">{o.paymentReference}</span>{' '}
+                  <span className="font-bold text-slate-500">{o.paymentMethod ?? o.payments[0]?.provider ?? '—'}</span>
+                  {o.expiresAt && (
+                    <span className="ml-2 text-xs font-bold text-amber-600">
+                      expire le {new Date(o.expiresAt).toLocaleString('fr-FR')}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  className="w-44 rounded-xl border border-slate-200 p-2 text-sm outline-none focus:border-brand"
+                  placeholder="Réf. transfert (optionnel)"
+                  value={confirmRef[o.id] || ''}
+                  onChange={(e) => setConfirmRef((r) => ({ ...r, [o.id]: e.target.value }))}
+                />
+                <button
+                  onClick={() => confirmPending(o.id)}
+                  className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-700"
+                >
+                  Confirmer
+                </button>
+                <button
+                  onClick={() => cancelPending(o.id)}
+                  className="rounded-full bg-red-100 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-200"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {pending.length === 0 && <p className="text-slate-500">Aucune commande en attente.</p>}
+      </div>
+      <button onClick={sweepExpired} className="mt-3 rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+        Purger les commandes expirées
+      </button>
 
       <h2 className="mt-10 text-2xl font-black">Événements</h2>
       <div className="mt-4 space-y-3">

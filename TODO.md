@@ -46,9 +46,20 @@
 ## Known limitations / next steps
 - [ ] DB-dependent validation not run here (no PostgreSQL on this VM): `prisma migrate deploy`, seed, API boot, e2e smoke test — run via docker-compose on dev machine
 - [ ] Conditional stock decrement (updateMany with ticketsAvailable >= quantity) for concurrent purchases
-- [ ] Expiration of unpaid PENDING orders (release reserved seats)
+- [x] Expiration of unpaid PENDING orders (release reserved seats) — lazy expiry on reads + `POST /admin/orders/sweep-expired`
 - [ ] Provider check on webhook (payment provider must match recorded payment)
 - [ ] Admin event form: city/category selectors instead of raw IDs
-- [ ] PATCH /users/profile edit form in profile page
+- [x] PATCH /users/profile edit form in profile page
 - [ ] Real MonCash/NatCash credentials + verified webhook contract (currently sandbox contract)
 - [ ] Order confirmation emails (resend)
+- [ ] WhatsApp delivery of tickets (in addition to on-site "Mes billets")
+
+## Phase 7: Paiement manuel (modèle lerichetopup)
+- [x] Référence courte `TH-XXXXXX` à recopier dans la note du transfert
+- [x] `POST /payments/{moncash,natcash}/initiate` renvoie les instructions manuelles (numéro marchand depuis env)
+- [x] `PaymentSettlementService` : chemin de règlement unique (webhook signé OU validation admin), idempotent
+- [x] Admin : `GET /admin/orders/pending`, `POST /admin/orders/:id/confirm`, `POST /admin/orders/:id/cancel`
+- [x] Checkout : affichage des instructions (numéro + référence copiables, étapes, expiration)
+- [x] Admin UI : section "Paiements en attente" avec confirmer/annuler + purge des expirées
+- [x] Migration `20260923020000_manual_payments` (orders.expires_at, payments.confirmed_by)
+- [x] Tests unitaires du service (14 tests Jest OK)
