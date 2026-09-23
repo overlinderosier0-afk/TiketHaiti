@@ -30,12 +30,12 @@
 - [x] Install missing deps
 
 ## Phase 5: Frontend - Pages
-- [ ] Home: dynamic events (still static hero — wire to /events)
+- [x] Home: dynamic events (section "À l'affiche" chargée via GET /events?limit=3)
 - [x] Events: filters + pagination
 - [x] Event detail: full info + quantity + order creation
 - [x] Checkout: working flow (provider choice, initiate, status polling)
 - [x] Tickets: QR display + PDF download
-- [x] Profile: info + order history
+- [x] Profile: info + order history + edit form (PATCH /users/profile)
 - [x] Admin pages (dashboard, create event, check-in, event list)
 
 ## Phase 6: Documentation & Polish
