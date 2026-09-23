@@ -108,9 +108,9 @@ function Hero() {
             <span className="text-campy">sans faire la queue.</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-8 text-slate-600">
-            Concerts, festivals, soirées… Choisis ton événement, paie avec{' '}
+            Concerts, festivals, soirées… Choisis ton événement, paie par transfert{' '}
             <strong>MonCash</strong> ou <strong>NatCash</strong>, et reçois ton billet QR
-            instantanément sur ton téléphone.
+            dès que ton paiement est validé.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link
@@ -255,8 +255,8 @@ function Features() {
     },
     {
       icon: '⚡',
-      title: 'Livraison instantanée',
-      text: 'Dès que ton paiement est confirmé, tes billets apparaissent dans ton compte, avec PDF téléchargeable.',
+      title: 'Billets émis après validation',
+      text: 'Dès que notre équipe confirme ton transfert (en général quelques minutes), tes billets apparaissent dans ton compte, avec PDF téléchargeable.',
       link: '/events',
       linkLabel: 'En profiter'
     },
@@ -319,56 +319,6 @@ function HowItWorks() {
             <p className="mt-2 text-sm leading-6 text-slate-600">{s.text}</p>
           </div>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function Testimonials() {
-  const items = [
-    {
-      quote: 'J’ai payé mon billet en deux minutes avec NatCash, QR reçu direct. À l’entrée, un scan et c’était bon.',
-      name: 'Woodjina P.',
-      city: 'Cap-Haïtien',
-      initials: 'WP'
-    },
-    {
-      quote: 'Fini les files devant les points de vente. J’achète depuis mon téléphone, même la veille du concert.',
-      name: 'Jefferson L.',
-      city: 'Port-au-Prince',
-      initials: 'JL'
-    },
-    {
-      quote: 'Le système de référence dans la note du transfert, c’est malin. Mon paiement a été confirmé en quelques minutes.',
-      name: 'Naïka D.',
-      city: 'Jacmel',
-      initials: 'ND'
-    }
-  ];
-  return (
-    <section className="bg-cream py-20">
-      <div className="container">
-        <p className="text-center text-xs font-black uppercase tracking-[0.25em] text-campy">Témoignages</p>
-        <h2 className="mx-auto mt-3 max-w-2xl text-center text-4xl font-black text-slate-900 md:text-5xl">
-          Nos fêtards sont nos meilleurs ambassadeurs.
-        </h2>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {items.map((t) => (
-            <figure key={t.name} className="rounded-[1.8rem] bg-white p-7 shadow-sm">
-              <p className="text-amber-400">★★★★★</p>
-              <blockquote className="mt-4 leading-7 text-slate-700">« {t.quote} »</blockquote>
-              <figcaption className="mt-6 flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-campy text-sm font-black text-white">
-                  {t.initials}
-                </span>
-                <span>
-                  <span className="block font-black text-slate-900">{t.name}</span>
-                  <span className="block text-sm text-slate-500">{t.city}</span>
-                </span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
       </div>
     </section>
   );
@@ -457,7 +407,6 @@ export default function Home() {
       <EventsShowcase />
       <Features />
       <HowItWorks />
-      <Testimonials />
       <Faq />
       <CtaBanner />
     </>

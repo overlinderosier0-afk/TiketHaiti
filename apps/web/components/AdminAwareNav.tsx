@@ -8,30 +8,32 @@ export default function AdminAwareNav() {
 
   return (
     <nav className="container flex h-20 items-center justify-between">
-      <Link href="/" className="text-2xl font-black text-brand tracking-tight">Tikè Ayiti</Link>
-      <div className="hidden gap-6 text-sm font-bold md:flex">
-        <Link href="/events" className="transition hover:text-brand">Événements</Link>
-        {user?.role === 'ADMIN' && <Link href="/admin" className="transition hover:text-brand">Admin</Link>}
-        <Link href="/tickets" className="transition hover:text-brand">Mes billets</Link>
-        <Link href="/profile" className="transition hover:text-brand">Profil</Link>
+      <Link href="/" className="text-2xl font-black tracking-tight text-slate-900">
+        Tikè Ayiti <span className="text-campy">✳</span>
+      </Link>
+      <div className="hidden gap-6 text-sm font-bold text-slate-700 md:flex">
+        <Link href="/events" className="transition hover:text-campy">Événements</Link>
+        {user?.role === 'ADMIN' && <Link href="/admin" className="transition hover:text-campy">Admin</Link>}
+        <Link href="/tickets" className="transition hover:text-campy">Mes billets</Link>
+        <Link href="/profile" className="transition hover:text-campy">Profil</Link>
       </div>
       <div className="flex items-center gap-3">
         {loading ? null : user ? (
           <>
-            <span className="hidden text-sm font-bold sm:block">
+            <span className="hidden text-sm font-bold text-slate-700 sm:block">
               {user.firstName} {user.lastName}
             </span>
             <button
               onClick={logout}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black hover:bg-slate-50"
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50"
             >
               Déconnexion
             </button>
           </>
         ) : (
           <>
-            <Link href="/login" className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black hover:bg-slate-50">Connexion</Link>
-            <Link href="/register" className="rounded-full bg-brand px-5 py-2 text-sm font-black text-white transition hover:bg-[#ba5521]">Créer un compte</Link>
+            <Link href="/login" className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50">Connexion</Link>
+            <Link href="/register" className="rounded-full bg-campy px-5 py-2 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">Créer un compte</Link>
           </>
         )}
       </div>

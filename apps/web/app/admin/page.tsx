@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { ErrorBox, Field, GhostButton, PageHead, PrimaryButton, StatusPill, inputCls } from '../../components/ui';
 
 interface Stats {
   totalEvents: number;
@@ -35,6 +36,12 @@ interface PendingOrder {
   user: { firstName: string; lastName: string; email: string; phone: string | null };
   payments: { provider: string; status: string; transactionReference: string | null }[];
   event: { title: string; eventDate: string };
+}
+
+function eventStatusTone(status: string): 'green' | 'red' | 'slate' {
+  if (status === 'PUBLISHED') return 'green';
+  if (status === 'CANCELLED') return 'red';
+  return 'slate';
 }
 
 export default function AdminPage() {
@@ -152,26 +159,25 @@ export default function AdminPage() {
   if (!loading && !user) {
     return (
       <section className="container py-14">
-        <p className="font-bold">Connectez-vous pour accéder à cette page.</p>
-        <Link href="/login?next=/admin" className="mt-4 inline-block rounded-full bg-brand px-6 py-3 font-black text-white">Se connecter</Link>
+        <PageHead eyebrow="Admin" title="Administration" sub="Connecte-toi pour accéder à cette page." />
+        <Link href="/login?next=/admin" className="mt-6 inline-flex items-center justify-center rounded-full bg-campy px-7 py-3 font-black text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">
+          Se connecter
+        </Link>
       </section>
     );
   }
   if (!loading && user && !isAdmin) {
     return (
       <section className="container py-14">
-        <h1 className="text-3xl font-black">Accès refusé</h1>
-        <p className="mt-3 text-slate-600">Cette page est réservée aux administrateurs.</p>
+        <PageHead eyebrow="Admin" title="Accès refusé" sub="Cette page est réservée aux administrateurs." />
       </section>
     );
   }
 
-  const input = 'w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand';
-
   return (
     <section className="container py-14">
-      <h1 className="text-4xl font-black">Administration</h1>
-      {error && <p className="mt-6 rounded-xl bg-red-50 p-4 font-bold text-red-700">{error}</p>}
+      <PageHead eyebrow="Admin" title="Administration" />
+      {error && <div className="mt-6"><ErrorBox>{error}</ErrorBox></div>}
 
       {stats && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -182,132 +188,138 @@ export default function AdminPage() {
             ['Revenu (HTG)', stats.revenue.toLocaleString('fr-FR')],
             ['Scannés (24h)', stats.scannedToday]
           ].map(([label, value]) => (
-            <div key={label as string} className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
+            <div key={label as string} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <p className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</p>
-              <p className="mt-2 text-2xl font-black text-brand">{value}</p>
+              <p className="mt-2 text-2xl font-black text-campy">{value}</p>
             </div>
           ))}
         </div>
       )}
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <div className="rounded-3xl border border-amber-100 bg-white p-7 shadow">
-          <h2 className="text-xl font-black">Créer un événement</h2>
+        <div className="rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm">
+          <h2 className="text-xl font-black text-slate-900">Créer un événement</h2>
           <form onSubmit={createEvent} className="mt-5 grid gap-4">
-            <label className="text-sm font-bold">Titre
-              <input className={input} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            </label>
+            <Field label="Titre">
+              <input className={inputCls} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </Field>
             <div className="grid grid-cols-2 gap-4">
-              <label className="text-sm font-bold">ID ville
-                <input className={input} required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="cuid…" />
-              </label>
-              <label className="text-sm font-bold">Prix (HTG)
-                <input className={input} type="number" required min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-              </label>
+              <Field label="ID ville">
+                <input className={inputCls} required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="cuid…" />
+              </Field>
+              <Field label="Prix (HTG)">
+                <input className={inputCls} type="number" required min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              </Field>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <label className="text-sm font-bold">Capacité
-                <input className={input} type="number" required min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
-              </label>
-              <label className="text-sm font-bold">Date
-                <input className={input} type="datetime-local" required value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
-              </label>
+              <Field label="Capacité">
+                <input className={inputCls} type="number" required min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+              </Field>
+              <Field label="Date">
+                <input className={inputCls} type="datetime-local" required value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
+              </Field>
             </div>
-            <button disabled={creating} className="rounded-full bg-brand p-3 font-black text-white transition hover:bg-[#ba5521] disabled:opacity-60">
+            <PrimaryButton disabled={creating} className="w-full">
               {creating ? 'Création…' : 'Créer (brouillon)'}
-            </button>
-            <p className="text-xs text-slate-400">Les IDs ville/catégorie sont temporaires — le sélecteur arrive dans la prochaine itération.</p>
+            </PrimaryButton>
+            <p className="text-xs font-bold text-slate-400">Les IDs ville/catégorie sont temporaires — le sélecteur arrive dans la prochaine itération.</p>
           </form>
         </div>
 
-        <div className="rounded-3xl border border-amber-100 bg-white p-7 shadow">
-          <h2 className="text-xl font-black">Check-in (scan)</h2>
+        <div className="rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm">
+          <h2 className="text-xl font-black text-slate-900">Check-in (scan)</h2>
           <form onSubmit={checkin} className="mt-5 flex gap-2">
             <input
-              className={input}
+              className="w-full rounded-xl border border-slate-200 bg-white p-3 outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
               placeholder="Code billet (ex. TIK-XXXX)"
               value={checkinCode}
               onChange={(e) => setCheckinCode(e.target.value)}
             />
-            <button disabled={checkinBusy || !checkinCode} className="shrink-0 rounded-full bg-brand px-5 font-black text-white disabled:opacity-60">
+            <PrimaryButton disabled={checkinBusy || !checkinCode} className="shrink-0 px-5">
               Valider
-            </button>
+            </PrimaryButton>
           </form>
-          {checkinMsg && <p className="mt-4 font-bold">{checkinMsg}</p>}
+          {checkinMsg && <p className="mt-4 font-bold text-slate-700">{checkinMsg}</p>}
+          <p className="mt-4 text-xs font-bold text-slate-400">
+            Saisis le code du billet pour valider l'entrée, ou scanne son QR.
+          </p>
         </div>
       </div>
 
-      <h2 className="mt-10 text-2xl font-black">Paiements en attente</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Vérifiez le transfert reçu sur votre MonCash/NatCash (montant + référence en note), puis confirmez.
-        La confirmation émet les billets automatiquement.
-      </p>
-      {pendingMsg && <p className="mt-3 font-bold">{pendingMsg}</p>}
-      <div className="mt-4 space-y-3">
-        {pending.map((o) => (
-          <div key={o.id} className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="font-black">{o.event.title} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG</p>
-                <p className="text-sm text-slate-500">
-                  {o.user.firstName} {o.user.lastName} ({o.user.email}{o.user.phone ? ` · ${o.user.phone}` : ''})
-                </p>
-                <p className="mt-1 text-sm">
-                  <span className="rounded bg-slate-100 px-2 py-0.5 font-mono font-black">{o.paymentReference}</span>{' '}
-                  <span className="font-bold text-slate-500">{o.paymentMethod ?? o.payments[0]?.provider ?? '—'}</span>
-                  {o.expiresAt && (
-                    <span className="ml-2 text-xs font-bold text-amber-600">
-                      expire le {new Date(o.expiresAt).toLocaleString('fr-FR')}
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  className="w-44 rounded-xl border border-slate-200 p-2 text-sm outline-none focus:border-brand"
-                  placeholder="Réf. transfert (optionnel)"
-                  value={confirmRef[o.id] || ''}
-                  onChange={(e) => setConfirmRef((r) => ({ ...r, [o.id]: e.target.value }))}
-                />
-                <button
-                  onClick={() => confirmPending(o.id)}
-                  className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-700"
-                >
-                  Confirmer
-                </button>
-                <button
-                  onClick={() => cancelPending(o.id)}
-                  className="rounded-full bg-red-100 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-200"
-                >
-                  Annuler
-                </button>
+      <div className="mt-12 rounded-[1.8rem] border-2 border-blue-100 bg-white p-7 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900">Paiements en attente</h2>
+            <p className="mt-1 text-sm font-bold text-slate-500">
+              Vérifiez le transfert reçu sur votre MonCash/NatCash (montant + référence en note), puis confirmez.
+              La confirmation émet les billets automatiquement.
+            </p>
+          </div>
+          <GhostButton onClick={sweepExpired}>
+            Purger les expirées
+          </GhostButton>
+        </div>
+        {pendingMsg && <p className="mt-3 font-bold text-slate-700">{pendingMsg}</p>}
+        <div className="mt-5 space-y-3">
+          {pending.map((o) => (
+            <div key={o.id} className="rounded-2xl border border-slate-100 bg-cream p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-black text-slate-900">{o.event.title} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG</p>
+                  <p className="text-sm font-bold text-slate-500">
+                    {o.user.firstName} {o.user.lastName} ({o.user.email}{o.user.phone ? ` · ${o.user.phone}` : ''})
+                  </p>
+                  <p className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                    <span className="rounded bg-white px-2 py-0.5 font-mono font-black text-campy shadow-sm">{o.paymentReference}</span>
+                    <StatusPill tone="blue">{o.paymentMethod ?? o.payments[0]?.provider ?? '—'}</StatusPill>
+                    {o.expiresAt && (
+                      <span className="text-xs font-bold text-amber-600">
+                        ⏳ expire le {new Date(o.expiresAt).toLocaleString('fr-FR')}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    className="w-44 rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
+                    placeholder="Réf. transfert (optionnel)"
+                    value={confirmRef[o.id] || ''}
+                    onChange={(e) => setConfirmRef((r) => ({ ...r, [o.id]: e.target.value }))}
+                  />
+                  <button
+                    onClick={() => confirmPending(o.id)}
+                    className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
+                  >
+                    Confirmer
+                  </button>
+                  <button
+                    onClick={() => cancelPending(o.id)}
+                    className="rounded-full bg-red-100 px-4 py-2 text-sm font-black text-red-700 transition hover:bg-red-200"
+                  >
+                    Annuler
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-        {pending.length === 0 && <p className="text-slate-500">Aucune commande en attente.</p>}
+          ))}
+          {pending.length === 0 && <p className="font-bold text-slate-400">Aucune commande en attente. 🎉</p>}
+        </div>
       </div>
-      <button onClick={sweepExpired} className="mt-3 rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
-        Purger les commandes expirées
-      </button>
 
-      <h2 className="mt-10 text-2xl font-black">Événements</h2>
+      <h2 className="mt-12 text-2xl font-black text-slate-900">Événements</h2>
       <div className="mt-4 space-y-3">
         {events.map((ev) => (
-          <div key={ev.id} className="flex items-center justify-between rounded-2xl border border-amber-100 bg-white p-4">
+          <div key={ev.id} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div>
-              <p className="font-bold">{ev.title}</p>
-              <p className="text-sm text-slate-500">
+              <p className="font-black text-slate-900">{ev.title}</p>
+              <p className="text-sm font-bold text-slate-500">
                 {new Date(ev.eventDate).toLocaleDateString('fr-FR')} · {ev.city?.name} · {ev.price.toLocaleString('fr-FR')} HTG · {ev.ticketsAvailable} restants
               </p>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-black ${
-              ev.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' :
-              ev.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'
-            }`}>{ev.status}</span>
+            <StatusPill tone={eventStatusTone(ev.status)}>{ev.status}</StatusPill>
           </div>
         ))}
-        {events.length === 0 && <p className="text-slate-500">Aucun événement.</p>}
+        {events.length === 0 && <p className="font-bold text-slate-400">Aucun événement.</p>}
       </div>
     </section>
   );

@@ -12,15 +12,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr">
       <body>
         <AuthProvider>
-          <header className="border-b border-amber-100 bg-white/90 shadow-sm backdrop-blur">
+          <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 shadow-sm backdrop-blur">
             <AdminAwareNav />
           </header>
           <main>{children}</main>
-          <footer className="mt-20 border-t border-amber-200 bg-[#2f3e3a] py-10 text-center text-sm text-amber-50">
+          <footer className="mt-20 bg-slate-900 py-12 text-center text-sm text-slate-300">
             <div className="container">
-              <p className="font-black text-xl">Tikè Ayiti</p>
-              <p className="mt-2 text-amber-100/90">Fèt nou, fason nou.</p>
-              <p className="mt-3 text-xs text-amber-100/70">© 2026 · Billets culturels et événements haïtiens</p>
+              <p className="text-xl font-black text-white">
+                Tikè Ayiti <span className="text-campy">✳</span>
+              </p>
+              <p className="mt-2 font-bold text-slate-400">Fèt nou, fason nou.</p>
+              <p className="mt-4 text-xs text-slate-500">© 2026 · Billets culturels et événements haïtiens</p>
             </div>
           </footer>
         </AuthProvider>

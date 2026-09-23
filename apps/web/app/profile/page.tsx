@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { EmptyState, ErrorBox, Field, GhostButton, PageHead, PrimaryButton, StatusPill, inputCls } from '../../components/ui';
 
 interface OrderItem {
   id: string;
@@ -12,6 +13,20 @@ interface OrderItem {
   paymentStatus: string;
   createdAt: string;
   event: { title: string; eventDate: string };
+}
+
+function orderTone(status: string): 'green' | 'amber' | 'red' | 'slate' {
+  if (status === 'PAID') return 'green';
+  if (status === 'PENDING') return 'amber';
+  if (status === 'CANCELLED') return 'red';
+  return 'slate';
+}
+
+function orderLabel(status: string): string {
+  if (status === 'PAID') return 'Payée';
+  if (status === 'PENDING') return 'En attente';
+  if (status === 'CANCELLED') return 'Annulée';
+  return status;
 }
 
 export default function ProfilePage() {
@@ -66,84 +81,87 @@ export default function ProfilePage() {
   if (!loading && !user) {
     return (
       <section className="container py-14">
-        <h1 className="text-4xl font-black">Mon profil</h1>
-        <p className="mt-4 text-slate-600">Connectez-vous pour voir votre profil.</p>
-        <Link href="/login?next=/profile" className="mt-4 inline-block rounded-full bg-brand px-6 py-3 font-black text-white">Se connecter</Link>
+        <PageHead eyebrow="Compte" title="Mon profil" sub="Connecte-toi pour voir ton profil." />
+        <Link href="/login?next=/profile" className="mt-6 inline-flex items-center justify-center rounded-full bg-campy px-7 py-3 font-black text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">
+          Se connecter
+        </Link>
       </section>
     );
   }
 
-  const input = 'w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand';
-
   return (
     <section className="container py-14">
-      <h1 className="text-4xl font-black">Mon profil</h1>
+      <PageHead eyebrow="Compte" title="Mon profil" />
       {savedMsg && <p className="mt-4 font-bold text-emerald-700">{savedMsg}</p>}
 
       {user && (
-        <div className="mt-8 rounded-3xl bg-white p-7 shadow">
+        <div className="mt-8 rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm">
           {!editing ? (
-            <>
-              <p className="text-sm text-slate-500">Compte connecté</p>
-              <h2 className="mt-2 text-2xl font-bold">{user.firstName} {user.lastName}</h2>
-              <p className="mt-1 text-slate-600">{user.email}{user.phone ? ` · ${user.phone}` : ''}</p>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Compte connecté</p>
+                <h2 className="mt-2 text-2xl font-black text-slate-900">{user.firstName} {user.lastName}</h2>
+                <p className="mt-1 font-bold text-slate-500">{user.email}{user.phone ? ` · ${user.phone}` : ''}</p>
+              </div>
               <button
                 onClick={() => setEditing(true)}
-                className="mt-5 rounded-full border border-brand px-5 py-2 text-sm font-black text-brand transition hover:bg-brand hover:text-white"
+                className="rounded-full border-2 border-campy px-5 py-2 text-sm font-black text-campy transition hover:bg-campy hover:text-white"
               >
                 Modifier mon profil
               </button>
-            </>
+            </div>
           ) : (
             <form onSubmit={saveProfile} className="grid gap-4">
-              <h2 className="text-xl font-black">Modifier mon profil</h2>
+              <h2 className="text-xl font-black text-slate-900">Modifier mon profil</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-bold">Prénom
-                  <input className={input} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required />
-                </label>
-                <label className="text-sm font-bold">Nom
-                  <input className={input} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required />
-                </label>
+                <Field label="Prénom">
+                  <input className={inputCls} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required />
+                </Field>
+                <Field label="Nom">
+                  <input className={inputCls} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required />
+                </Field>
               </div>
-              <label className="text-sm font-bold">Email
-                <input className={input} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-              </label>
-              <label className="text-sm font-bold">Téléphone
-                <input className={input} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Ex. +509…" />
-              </label>
+              <Field label="Email">
+                <input className={inputCls} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              </Field>
+              <Field label="Téléphone">
+                <input className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Ex. +509…" />
+              </Field>
               <div className="flex gap-3">
-                <button disabled={saving} className="rounded-full bg-brand px-6 py-2 font-black text-white transition hover:bg-[#ba5521] disabled:opacity-60">
+                <PrimaryButton disabled={saving}>
                   {saving ? 'Enregistrement…' : 'Enregistrer'}
-                </button>
-                <button type="button" onClick={() => setEditing(false)} className="rounded-full border border-slate-200 px-6 py-2 font-black text-slate-500">
+                </PrimaryButton>
+                <GhostButton type="button" onClick={() => setEditing(false)}>
                   Annuler
-                </button>
+                </GhostButton>
               </div>
             </form>
           )}
         </div>
       )}
 
-      <h2 className="mt-10 text-2xl font-black">Mes commandes</h2>
-      {error && <p className="mt-4 rounded-xl bg-red-50 p-4 font-bold text-red-700">{error}</p>}
+      <h2 className="mt-12 text-2xl font-black text-slate-900">Mes commandes</h2>
+      {error && <div className="mt-4"><ErrorBox>{error}</ErrorBox></div>}
       {orders.length === 0 && !error && (
-        <p className="mt-4 text-slate-500">Aucune commande pour le moment.</p>
+        <div className="mt-4">
+          <EmptyState
+            title="Aucune commande pour le moment"
+            text="Tes commandes apparaîtront ici après ton premier achat."
+            actionHref="/events"
+            actionLabel="Voir les événements"
+          />
+        </div>
       )}
       <div className="mt-4 space-y-3">
         {orders.map((o) => (
-          <div key={o.id} className="flex items-center justify-between rounded-2xl border border-amber-100 bg-white p-4">
+          <div key={o.id} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div>
-              <p className="font-bold">{o.event.title}</p>
-              <p className="text-sm text-slate-500">
+              <p className="font-black text-slate-900">{o.event.title}</p>
+              <p className="text-sm font-bold text-slate-500">
                 {new Date(o.event.eventDate).toLocaleDateString('fr-FR')} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG
               </p>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-black ${
-              o.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' :
-              o.paymentStatus === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'
-            }`}>
-              {o.paymentStatus}
-            </span>
+            <StatusPill tone={orderTone(o.paymentStatus)}>{orderLabel(o.paymentStatus)}</StatusPill>
           </div>
         ))}
       </div>

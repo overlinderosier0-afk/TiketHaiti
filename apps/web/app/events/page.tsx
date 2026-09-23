@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
+import { CategoryPill, EmptyState, ErrorBox, PageHead, StatusPill } from '../../components/ui';
 
 interface EventItem {
   id: string;
@@ -40,11 +41,12 @@ export default function EventsPage() {
 
   return (
     <section className="container py-14">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-black">Événements</h1>
-          <p className="mt-2 text-slate-500">Concerts, festivals et sorties partout en Haïti.</p>
-        </div>
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <PageHead
+          eyebrow="Catalogue"
+          title="Événements"
+          sub="Concerts, festivals et sorties partout en Haïti."
+        />
         <form
           onSubmit={(e) => { e.preventDefault(); setPage(1); }}
           className="flex gap-2"
@@ -53,41 +55,62 @@ export default function EventsPage() {
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Ville… (ex. Jacmel)"
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm outline-none focus:border-brand"
+            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
           />
-          <button className="rounded-full bg-brand px-5 py-2 text-sm font-black text-white">Filtrer</button>
+          <button className="rounded-full bg-campy px-5 py-2 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">
+            Filtrer
+          </button>
         </form>
       </div>
 
-      {error && <p className="mt-8 rounded-xl bg-red-50 p-4 font-bold text-red-700">{error}</p>}
+      {error && <div className="mt-8"><ErrorBox>{error}</ErrorBox></div>}
+
+      {!data && !error && (
+        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="animate-pulse rounded-[1.8rem] bg-white p-6 shadow-sm">
+              <div className="h-5 w-24 rounded-full bg-blue-50" />
+              <div className="mt-5 h-4 w-40 rounded bg-slate-100" />
+              <div className="mt-3 h-7 w-3/4 rounded bg-slate-100" />
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {data?.items.map((ev) => (
           <Link
             key={ev.id}
             href={`/events/${ev.slug || ev.id}`}
-            className="overflow-hidden rounded-3xl border border-amber-100 bg-white shadow-sm transition hover:shadow-lg"
+            className="group rounded-[1.8rem] border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1.5 hover:shadow-xl"
           >
-            <div className="p-6">
-              <p className="text-xs font-black uppercase tracking-widest text-brand">
-                {new Date(ev.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {ev.city?.name}
-              </p>
-              <h3 className="mt-2 text-xl font-black">{ev.title}</h3>
-              <p className="mt-1 text-sm text-slate-500">{ev.category?.name}</p>
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-lg font-black">{ev.price.toLocaleString('fr-FR')} HTG</p>
-                <p className={`text-xs font-bold ${ev.ticketsAvailable > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {ev.ticketsAvailable > 0 ? `${ev.ticketsAvailable} billets` : 'Complet'}
-                </p>
-              </div>
+            <CategoryPill>{ev.category?.name}</CategoryPill>
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+              {new Date(ev.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {ev.city?.name}
+            </p>
+            <h3 className="mt-2 text-2xl font-black text-slate-900">{ev.title}</h3>
+            <div className="mt-5 flex items-center justify-between">
+              <p className="text-lg font-black text-slate-900">{ev.price.toLocaleString('fr-FR')} HTG</p>
+              {ev.ticketsAvailable > 0 ? (
+                <StatusPill tone="green">{ev.ticketsAvailable} billets</StatusPill>
+              ) : (
+                <StatusPill tone="red">Complet</StatusPill>
+              )}
             </div>
+            <span className="mt-5 inline-flex rounded-full bg-slate-900 px-5 py-2.5 text-sm font-black text-white transition group-hover:bg-campy">
+              Prendre mes billets →
+            </span>
           </Link>
         ))}
       </div>
 
-      {!data && !error && <p className="mt-10 text-center text-slate-400">Chargement des événements…</p>}
       {data && data.items.length === 0 && (
-        <p className="mt-10 text-center text-slate-500">Aucun événement trouvé.</p>
+        <div className="mt-10">
+          <EmptyState
+            title="Aucun événement trouvé"
+            text="Essaie une autre ville, ou reviens bientôt : le catalogue s'agrandit."
+          />
+        </div>
       )}
 
       {data && data.totalPages > 1 && (
@@ -95,15 +118,15 @@ export default function EventsPage() {
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold disabled:opacity-40"
+            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
           >
             ← Précédent
           </button>
-          <span className="text-sm font-bold">Page {page} / {data.totalPages}</span>
+          <span className="text-sm font-bold text-slate-600">Page {page} / {data.totalPages}</span>
           <button
             disabled={page >= data.totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold disabled:opacity-40"
+            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
           >
             Suivant →
           </button>
