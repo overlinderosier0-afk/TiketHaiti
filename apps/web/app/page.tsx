@@ -1,12 +1,34 @@
-import Link from 'next/link';
+'use client';
 
-const events = [
-  { city: 'Port-au-Prince', name: 'Fête de la musique', date: '16 août 2026', badge: 'Culture' },
-  { city: 'Jacmel', name: 'Festival de Jacmel', date: '12 août 2026', badge: 'Art & Mer' },
-  { city: 'Cap-Haïtien', name: 'Vibes du Nord', date: '24 août 2026', badge: 'Concert' }
-];
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { api } from '../lib/api';
+
+interface EventItem {
+  id: string;
+  title: string;
+  slug: string;
+  city: { name: string };
+  category: { name: string };
+  eventDate: string;
+  price: number;
+}
+
+interface PageResult {
+  items: EventItem[];
+  total: number;
+}
 
 export default function Home() {
+  const [data, setData] = useState<PageResult | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    api<PageResult>('/events?limit=3')
+      .then(setData)
+      .catch(() => setFailed(true));
+  }, []);
+
   return (
     <section className="container py-14">
       <section className="hero-culture relative overflow-hidden rounded-[2rem] px-8 py-20 text-white shadow-xl md:px-14">
@@ -47,19 +69,48 @@ export default function Home() {
           </div>
           <Link href="/events" className="font-black text-brand">Tout voir →</Link>
         </div>
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {events.map((event, index) => (
-            <article key={index} className="soft-card rounded-[2rem] border border-white bg-white p-6 shadow-xl transition hover:-translate-y-2 hover:shadow-2xl">
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-brand">{event.badge}</span>
-              <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-slate-500">{event.date} · {event.city}</p>
-              <h3 className="mt-3 text-2xl font-black">{event.name}</h3>
-              <p className="mt-4 text-sm text-slate-600">Un rendez-vous culturel à vivre en Haïti.</p>
-              <Link href="/events" className="mt-6 inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-black hover:bg-brand hover:text-white">Voir détail</Link>
-            </article>
-          ))}
-        </div>
+
+        {!data && !failed && (
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="animate-pulse rounded-[2rem] bg-white p-6 shadow-xl">
+                <div className="h-5 w-24 rounded-full bg-amber-100" />
+                <div className="mt-5 h-4 w-40 rounded bg-slate-100" />
+                <div className="mt-3 h-7 w-3/4 rounded bg-slate-100" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {failed && (
+          <p className="mt-8 rounded-2xl bg-white p-6 text-center font-bold text-slate-500 shadow">
+            Impossible de charger les événements pour le moment.{' '}
+            <Link href="/events" className="text-brand">Voir la liste complète →</Link>
+          </p>
+        )}
+
+        {data && data.items.length === 0 && (
+          <p className="mt-8 rounded-2xl bg-white p-6 text-center font-bold text-slate-500 shadow">
+            Aucun événement publié pour le moment. Revenez bientôt !
+          </p>
+        )}
+
+        {data && data.items.length > 0 && (
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {data.items.map((event) => (
+              <article key={event.id} className="soft-card rounded-[2rem] border border-white bg-white p-6 shadow-xl transition hover:-translate-y-2 hover:shadow-2xl">
+                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-brand">{event.category?.name}</span>
+                <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                  {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {event.city?.name}
+                </p>
+                <h3 className="mt-3 text-2xl font-black">{event.title}</h3>
+                <p className="mt-4 text-sm text-slate-600">À partir de {event.price.toLocaleString('fr-FR')} HTG</p>
+                <Link href={`/events/${event.slug || event.id}`} className="mt-6 inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-black hover:bg-brand hover:text-white">Voir détail</Link>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </section>
   );
 }
-
