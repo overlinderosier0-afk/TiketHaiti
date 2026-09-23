@@ -51,13 +51,13 @@ function CheckoutForm() {
     setError('');
     setNotice('');
     try {
-      const res = await api<{ checkoutUrl: string; reference: string; transactionId: string }>(
-        `/payments/${provider}/initiate/${orderId}`,
-        { method: 'POST' }
+      const res = await api<{ checkoutUrl: string; provider: string }>(
+        `/payments/${provider}/initiate`,
+        { method: 'POST', body: JSON.stringify({ orderId }) }
       );
       setCheckoutUrl(res.checkoutUrl);
       setNotice(
-        `Paiement initié via ${provider === 'moncash' ? 'MonCash' : 'NatCash'} (réf. ${res.reference}). ` +
+        `Paiement initié via ${provider === 'moncash' ? 'MonCash' : 'NatCash'} (commande ${orderId}). ` +
         `Mode sandbox : le webhook simulé marque la commande payée. Cette page se rafraîchit automatiquement.`
       );
     } catch (e: any) {

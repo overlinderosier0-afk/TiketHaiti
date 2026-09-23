@@ -46,11 +46,11 @@ export default function EventDetailPage() {
     setBusy(true);
     setError('');
     try {
-      const order = await api<{ id: string }>('/orders', {
+      const res = await api<{ orderId: string }>('/orders', {
         method: 'POST',
         body: JSON.stringify({ eventId: event.id, quantity: qty })
       });
-      router.push(`/checkout?order=${order.id}`);
+      router.push(`/checkout?order=${res.orderId}`);
     } catch (e: any) {
       setError(e?.message || 'Commande impossible');
     } finally {

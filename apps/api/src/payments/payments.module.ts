@@ -126,11 +126,28 @@ class PaymentsController {
             webhookPayload: payload
           }
         });
+      } else {
+        // Le fournisseur n'avait pas été choisi à la création de la
+        // commande : on enregistre le paiement maintenant.
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            provider,
+            amount: order.total,
+            currency: 'HTG',
+            status: succeeded ? 'SUCCEEDED' : 'FAILED',
+            transactionReference: payload.transactionReference,
+            webhookPayload: payload
+          }
+        });
       }
 
       await tx.order.update({
         where: { id: order.id },
-        data: { paymentStatus: succeeded ? 'PAID' : 'FAILED' }
+        data: {
+          paymentStatus: succeeded ? 'PAID' : 'FAILED',
+          paymentMethod: order.paymentMethod ?? provider
+        }
       });
 
       if (succeeded) {

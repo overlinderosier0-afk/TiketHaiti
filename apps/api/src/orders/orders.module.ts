@@ -1,12 +1,12 @@
 import { Module, Controller, Post, Body, UseGuards, Req, Get, Param, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { IsInt, IsString, Min, Max } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min, Max } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
 
 class CreateOrderDto {
   @IsString() eventId!: string;
   @IsInt() @Min(1) @Max(20) quantity!: number;
-  @IsString() paymentMethod!: 'MONCASH' | 'NATCASH';
+  @IsOptional() @IsString() paymentMethod?: 'MONCASH' | 'NATCASH';
 }
 
 @Controller('orders')
@@ -38,28 +38,33 @@ class OrdersController {
           eventId: dto.eventId,
           quantity: dto.quantity,
           total,
-          paymentMethod: dto.paymentMethod,
+          paymentMethod: dto.paymentMethod ?? null,
           paymentStatus: 'PENDING',
           paymentReference: `ORDER-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
         }
       });
 
-      await tx.payment.create({
-        data: {
-          orderId: order.id,
-          provider: dto.paymentMethod,
-          amount: total,
-          currency: 'HTG',
-          status: 'PENDING'
-        }
-      });
+      // Ligne de paiement pré-créée seulement si le fournisseur est déjà
+      // connu. Sinon, le checkout choisit MonCash/NatCash plus tard et le
+      // webhook met à jour la commande (et crée la ligne si besoin).
+      if (dto.paymentMethod) {
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            provider: dto.paymentMethod,
+            amount: total,
+            currency: 'HTG',
+            status: 'PENDING'
+          }
+        });
+      }
 
       return order;
     });
 
     return {
       order: result,
-      checkoutUrl: `/payments/${dto.paymentMethod.toLowerCase()}/initiate`,
+      checkoutUrl: dto.paymentMethod ? `/payments/${dto.paymentMethod.toLowerCase()}/initiate` : null,
       orderId: result.id
     };
   }
