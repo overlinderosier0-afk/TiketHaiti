@@ -7,7 +7,7 @@ import { api } from '../../lib/api';
 
 interface OrderDetail {
   id: string;
-  totalAmount: number;
+  total: number;
   quantity: number;
   paymentStatus: string;
   paymentReference: string | null;
@@ -91,7 +91,7 @@ function CheckoutForm() {
           <p className="mt-1 text-sm text-slate-500">
             {new Date(order.event.eventDate).toLocaleDateString('fr-FR')} · {order.event.city?.name} · {order.quantity} billet(s)
           </p>
-          <p className="mt-4 text-3xl font-black text-brand">{order.totalAmount.toLocaleString('fr-FR')} HTG</p>
+          <p className="mt-4 text-3xl font-black text-brand">{order.total.toLocaleString('fr-FR')} HTG</p>
           <p className="mt-2 text-sm font-bold">
             Statut : <span className={order.paymentStatus === 'PAID' ? 'text-emerald-600' : 'text-amber-600'}>{order.paymentStatus}</span>
           </p>

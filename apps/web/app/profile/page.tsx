@@ -7,7 +7,7 @@ import { useAuth } from '../../lib/auth';
 
 interface OrderItem {
   id: string;
-  totalAmount: number;
+  total: number;
   quantity: number;
   paymentStatus: string;
   createdAt: string;
@@ -135,7 +135,7 @@ export default function ProfilePage() {
             <div>
               <p className="font-bold">{o.event.title}</p>
               <p className="text-sm text-slate-500">
-                {new Date(o.event.eventDate).toLocaleDateString('fr-FR')} · {o.quantity} billet(s) · {o.totalAmount.toLocaleString('fr-FR')} HTG
+                {new Date(o.event.eventDate).toLocaleDateString('fr-FR')} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG
               </p>
             </div>
             <span className={`rounded-full px-3 py-1 text-xs font-black ${
