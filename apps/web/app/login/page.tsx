@@ -1,13 +1,31 @@
 'use client';
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { FormEvent, Suspense, useState } from 'react';
+import { useAuth } from '../../lib/auth';
 
-export default function Login() {
-  const [role, setRole] = useState('PUBLIC');
+function LoginForm() {
+  const { login } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') || '/events';
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    window.localStorage.setItem('tikeAyiti.role', role);
+    setError('');
+    setBusy(true);
+    try {
+      await login(email, password);
+      router.push(next);
+    } catch (err: any) {
+      setError(err?.message || 'Connexion impossible');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -18,22 +36,20 @@ export default function Login() {
           <h1 className="mt-4 text-3xl font-black">Bon retour</h1>
         </div>
         <form onSubmit={submit} className="mt-8">
+          {error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700">{error}</p>}
           <label className="block text-sm font-bold">
             Email
-            <input type="email" required className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" />
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" />
           </label>
           <label className="mt-4 block text-sm font-bold">
             Mot de passe
-            <input type="password" required className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" />
+            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" />
           </label>
-          <label className="mt-4 block text-sm font-bold">
-            Type de compte
-            <select value={role} onChange={(event) => setRole(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand">
-              <option value="PUBLIC">Client</option>
-              <option value="ADMIN">Administrateur</option>
-            </select>
-          </label>
-          <button className="mt-7 w-full rounded-full bg-brand p-3 font-black text-white transition hover:bg-[#ba5521]">Se connecter</button>
+          <button disabled={busy} className="mt-7 w-full rounded-full bg-brand p-3 font-black text-white transition hover:bg-[#ba5521] disabled:opacity-60">
+            {busy ? 'Connexion…' : 'Se connecter'}
+          </button>
           <div className="mt-5 text-center text-sm">
             <span className="text-slate-500">Pas encore de compte ?</span>{' '}
             <Link href="/register" className="font-black text-brand">Créer un compte</Link>
@@ -44,3 +60,10 @@ export default function Login() {
   );
 }
 
+export default function Login() {
+  return (
+    <Suspense fallback={<section className="container py-20">Chargement…</section>}>
+      <LoginForm />
+    </Suspense>
+  );
+}

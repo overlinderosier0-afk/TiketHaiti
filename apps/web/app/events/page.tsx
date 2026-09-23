@@ -1,109 +1,114 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '../../lib/api';
 
-const events = [
-  {
-    id: '1',
-    title: 'Festival de Jacmel',
-    city: 'Jacmel',
-    date: '12 août 2026',
-    desc: 'Musique, art et culture au bord de la mer.',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80'
-  },
-  {
-    id: '2',
-    title: 'Tech Summit Haïti',
-    city: 'Port-au-Prince',
-    date: '21 septembre 2026',
-    desc: 'Les idées qui construisent demain.',
-    image: 'https://images.unsplash.com/photo-1523374228107-6d1f0a85f5d3?auto=format&fit=crop&q=80'
-  },
-  {
-    id: '3',
-    title: 'Lumières de la culture',
-    city: 'Cap-Haïtien',
-    date: '04 octobre 2026',
-    desc: 'Danse, patrimoine et célébration de nos racines.',
-    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&q=80'
-  },
-  {
-    id: '4',
-    title: 'Rendez-vous du Sud',
-    city: 'Les Cayes',
-    date: '18 octobre 2026',
-    desc: 'Animation locale, gastronomie et concerts.',
-    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80'
-  }
-];
+interface EventItem {
+  id: string;
+  title: string;
+  slug: string;
+  city: { name: string };
+  category: { name: string };
+  eventDate: string;
+  price: number;
+  ticketsAvailable: number;
+  status: string;
+}
 
-export default function Events() {
-  const [zone, setZone] = useState('');
+interface PageResult {
+  items: EventItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
-  const filteredEvents = useMemo(() => {
-    const normalized = zone.trim().toLowerCase();
+export default function EventsPage() {
+  const [data, setData] = useState<PageResult | null>(null);
+  const [error, setError] = useState('');
+  const [city, setCity] = useState('');
+  const [page, setPage] = useState(1);
 
-    if (!normalized) {
-      return events;
-    }
-
-    return events.filter((event) => {
-      return (
-        event.city.toLowerCase().includes(normalized) ||
-        event.title.toLowerCase().includes(normalized) ||
-        event.desc.toLowerCase().includes(normalized)
-      );
-    });
-  }, [zone]);
+  useEffect(() => {
+    const params = new URLSearchParams({ status: 'PUBLISHED', page: String(page), limit: '12' });
+    if (city.trim()) params.set('city', city.trim());
+    api<PageResult>(`/events?${params}`)
+      .then(setData)
+      .catch((e: any) => setError(e?.message || 'Chargement impossible'));
+  }, [city, page]);
 
   return (
     <section className="container py-14">
-      <div className="mb-8 flex items-end justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-black uppercase tracking-[0.2em] text-brand">Calendrier</p>
-          <h1 className="mt-2 text-4xl font-black">Tous les événements</h1>
+          <h1 className="text-4xl font-black">Événements</h1>
+          <p className="mt-2 text-slate-500">Concerts, festivals et sorties partout en Haïti.</p>
         </div>
-        <Link href="/register" className="rounded-full border border-brand px-5 py-2 font-black text-brand transition hover:bg-brand hover:text-white">S’inscrire</Link>
+        <form
+          onSubmit={(e) => { e.preventDefault(); setPage(1); }}
+          className="flex gap-2"
+        >
+          <input
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Ville… (ex. Jacmel)"
+            className="rounded-full border border-slate-200 px-4 py-2 text-sm outline-none focus:border-brand"
+          />
+          <button className="rounded-full bg-brand px-5 py-2 text-sm font-black text-white">Filtrer</button>
+        </form>
       </div>
 
-      <section className="mb-8 rounded-[2rem] border border-amber-100 bg-white p-5 shadow-sm">
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-          <label className="block">
-            <span className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Recherche par région / zone</span>
-            <input
-              value={zone}
-              onChange={(e) => setZone(e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-slate-200 p-3 outline-none focus:border-brand"
-              placeholder="Ex. Jacmel, Port-au-Prince, Sud..."
-            />
-          </label>
-          <button onClick={() => setZone('')} className="rounded-full bg-slate-900 px-6 py-3 font-black text-white transition hover:bg-brand">
-            Réinitialiser
-          </button>
-        </div>
-      </section>
+      {error && <p className="mt-8 rounded-xl bg-red-50 p-4 font-bold text-red-700">{error}</p>}
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-        {filteredEvents.map((e) => (
-          <Link href={`/events/${e.id}`} key={e.id} className="overflow-hidden rounded-[2rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-            <div className="h-44 bg-cover bg-center" style={{ backgroundImage: `url('${e.image}')` }} />
-            <article className="p-7">
-              <p className="font-black text-brand">{e.date} · {e.city}</p>
-              <h2 className="mt-3 text-2xl font-black">{e.title}</h2>
-              <p className="mt-2 text-slate-600">{e.desc}</p>
-              <span className="mt-6 inline-block font-black text-brand">Voir l'événement →</span>
-            </article>
+      <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {data?.items.map((ev) => (
+          <Link
+            key={ev.id}
+            href={`/events/${ev.slug || ev.id}`}
+            className="overflow-hidden rounded-3xl border border-amber-100 bg-white shadow-sm transition hover:shadow-lg"
+          >
+            <div className="p-6">
+              <p className="text-xs font-black uppercase tracking-widest text-brand">
+                {new Date(ev.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {ev.city?.name}
+              </p>
+              <h3 className="mt-2 text-xl font-black">{ev.title}</h3>
+              <p className="mt-1 text-sm text-slate-500">{ev.category?.name}</p>
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-lg font-black">{ev.price.toLocaleString('fr-FR')} HTG</p>
+                <p className={`text-xs font-bold ${ev.ticketsAvailable > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {ev.ticketsAvailable > 0 ? `${ev.ticketsAvailable} billets` : 'Complet'}
+                </p>
+              </div>
+            </div>
           </Link>
         ))}
       </div>
 
-      {filteredEvents.length === 0 && (
-        <div className="mt-8 rounded-3xl bg-amber-50 p-8 text-center font-black text-slate-700">
-          Aucun événement trouvé pour cette zone.
+      {!data && !error && <p className="mt-10 text-center text-slate-400">Chargement des événements…</p>}
+      {data && data.items.length === 0 && (
+        <p className="mt-10 text-center text-slate-500">Aucun événement trouvé.</p>
+      )}
+
+      {data && data.totalPages > 1 && (
+        <div className="mt-10 flex items-center justify-center gap-4">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold disabled:opacity-40"
+          >
+            ← Précédent
+          </button>
+          <span className="text-sm font-bold">Page {page} / {data.totalPages}</span>
+          <button
+            disabled={page >= data.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold disabled:opacity-40"
+          >
+            Suivant →
+          </button>
         </div>
       )}
     </section>
   );
 }
-

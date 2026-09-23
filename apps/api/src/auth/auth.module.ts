@@ -1,6 +1,6 @@
-import { Global, Module, CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Global, Module, CanActivate, ExecutionContext, Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import { IsEmail, IsString, MinLength, Length } from 'class-validator';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
@@ -46,7 +46,7 @@ export class AuthController {
   async register(@Body() dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
-      throw new UnauthorizedException('Cet email est déjà utilisé');
+      throw new ConflictException('Cet email est déjà utilisé');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -112,10 +112,11 @@ export class AuthController {
 
 @Global()
 @Module({
-  imports: [JwtModule],
+  // JwtModule est enregistré en global dans AppModule avec la vraie config ;
+  // on ne l'importe plus ici (l'import vide précédent cassait jwt.sign()).
   controllers: [AuthController],
   providers: [JwtGuard, PrismaService],
-  exports: [JwtGuard, JwtModule]
+  exports: [JwtGuard]
 })
 export class AuthModule {}
 

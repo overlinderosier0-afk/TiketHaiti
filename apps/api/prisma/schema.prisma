@@ -93,6 +93,7 @@ model Event {
   city     City     @relation(fields: [cityId], references: [id])
   category Category @relation(fields: [categoryId], references: [id])
   tickets  Ticket[]
+  orders   Order[]
 
   @@map("events")
 }
@@ -100,13 +101,16 @@ model Event {
 model Order {
   id               String        @id @default(uuid())
   userId           String        @map("user_id")
+  eventId          String        @map("event_id")
+  quantity         Int           @default(1)
   total            Float
   paymentMethod    String?       @map("payment_method")
   paymentStatus    PaymentStatus @default(PENDING) @map("payment_status")
-  paymentReference String?       @map("payment_reference")
+  paymentReference String?       @unique @map("payment_reference")
   createdAt        DateTime      @default(now()) @map("created_at")
 
   user     User      @relation(fields: [userId], references: [id])
+  event    Event     @relation(fields: [eventId], references: [id])
   tickets  Ticket[]
   payments Payment[]
 

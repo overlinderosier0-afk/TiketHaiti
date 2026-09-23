@@ -1,81 +1,146 @@
 'use client';
-import { Suspense, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 
-const paymentOptions = [
-  { key: 'moncash', label: 'MonCash', detail: 'Mobile Money' },
-  { key: 'natcash', label: 'NatCash', detail: 'Compte mobile' },
-  { key: 'visa', label: 'Carte bancaire', detail: 'Carte en ligne' }
-];
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '../../lib/api';
 
-function CheckoutContent() {
+interface OrderDetail {
+  id: string;
+  totalAmount: number;
+  quantity: number;
+  paymentStatus: string;
+  paymentReference: string | null;
+  event: { title: string; eventDate: string; price: number; city: { name: string } };
+  payments: { id: string; provider: string; status: string }[];
+}
+
+function CheckoutForm() {
   const searchParams = useSearchParams();
-  const event = searchParams.get('event');
-  const [selected, setSelected] = useState('moncash');
+  const router = useRouter();
+  const orderId = searchParams.get('order');
+  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [error, setError] = useState('');
+  const [provider, setProvider] = useState<'moncash' | 'natcash'>('moncash');
+  const [busy, setBusy] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState('');
+  const [notice, setNotice] = useState('');
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const selectedProvider = useMemo(
-    () => paymentOptions.find((payment) => payment.key === selected) ?? paymentOptions[0],
-    [selected]
-  );
+  const load = useCallback(() => {
+    if (!orderId) return;
+    api<OrderDetail>(`/orders/${orderId}`)
+      .then((o) => {
+        setOrder(o);
+        if (o.paymentStatus === 'PAID') router.push('/tickets');
+      })
+      .catch((e: any) => setError(e?.message || 'Commande introuvable'));
+  }, [orderId, router]);
+
+  useEffect(() => {
+    load();
+    pollRef.current = setInterval(load, 4000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [load]);
+
+  async function initiate() {
+    if (!orderId) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const res = await api<{ checkoutUrl: string; reference: string; transactionId: string }>(
+        `/payments/${provider}/initiate/${orderId}`,
+        { method: 'POST' }
+      );
+      setCheckoutUrl(res.checkoutUrl);
+      setNotice(
+        `Paiement initié via ${provider === 'moncash' ? 'MonCash' : 'NatCash'} (réf. ${res.reference}). ` +
+        `Mode sandbox : le webhook simulé marque la commande payée. Cette page se rafraîchit automatiquement.`
+      );
+    } catch (e: any) {
+      setError(e?.message || 'Paiement impossible');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!orderId) {
+    return (
+      <section className="container py-16">
+        <p className="font-bold text-slate-600">Aucune commande sélectionnée.</p>
+        <Link href="/events" className="mt-4 inline-block font-black text-brand">Voir les événements</Link>
+      </section>
+    );
+  }
 
   return (
-    <section className="container py-14">
-      <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_380px]">
-        <section className="rounded-[2rem] bg-white p-8 shadow-xl">
-          <h1 className="text-4xl font-black">Finaliser l'achat</h1>
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-brand">Événement</p>
-            <p className="mt-1 text-xl font-black">#{event ?? 'HAI-2026'}</p>
-          </div>
-          <div className="mt-8 rounded-2xl border border-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 p-5">
-              <span className="font-bold">Entrée générale × 1</span>
-              <b className="text-brand">1 500 HTG</b>
-            </div>
-            <div className="flex items-center justify-between p-5">
-              <span className="text-sm font-bold text-slate-500">Total</span>
-              <b className="text-2xl font-black">1 500 HTG</b>
-            </div>
-          </div>
-        </section>
+    <section className="container max-w-2xl py-16">
+      <h1 className="text-3xl font-black">Paiement</h1>
 
-        <aside className="rounded-[2rem] bg-slate-900 p-8 text-white shadow-xl">
-          <p className="text-sm font-black uppercase tracking-[0.24em] text-amber-200">Paiement</p>
-          <h2 className="mt-3 text-3xl font-black">Choisissez</h2>
-          <div className="mt-5 grid gap-3">
-            {paymentOptions.map((payment) => (
+      {error && <p className="mt-6 rounded-xl bg-red-50 p-4 font-bold text-red-700">{error}</p>}
+
+      {!order && !error && <p className="mt-8 text-slate-400">Chargement de la commande…</p>}
+
+      {order && (
+        <div className="mt-8 rounded-3xl border border-amber-100 bg-white p-7 shadow">
+          <p className="text-sm text-slate-500">Commande</p>
+          <h2 className="mt-1 text-xl font-black">{order.event.title}</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {new Date(order.event.eventDate).toLocaleDateString('fr-FR')} · {order.event.city?.name} · {order.quantity} billet(s)
+          </p>
+          <p className="mt-4 text-3xl font-black text-brand">{order.totalAmount.toLocaleString('fr-FR')} HTG</p>
+          <p className="mt-2 text-sm font-bold">
+            Statut : <span className={order.paymentStatus === 'PAID' ? 'text-emerald-600' : 'text-amber-600'}>{order.paymentStatus}</span>
+          </p>
+
+          {order.paymentStatus !== 'PAID' && (
+            <>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setProvider('moncash')}
+                  className={`rounded-2xl border-2 p-4 font-black transition ${provider === 'moncash' ? 'border-brand bg-amber-50' : 'border-slate-200'}`}
+                >
+                  MonCash
+                </button>
+                <button
+                  onClick={() => setProvider('natcash')}
+                  className={`rounded-2xl border-2 p-4 font-black transition ${provider === 'natcash' ? 'border-brand bg-amber-50' : 'border-slate-200'}`}
+                >
+                  NatCash
+                </button>
+              </div>
               <button
-                key={payment.key}
-                aria-pressed={selected === payment.key}
-                onClick={() => setSelected(payment.key)}
-                className={`rounded-2xl border px-4 py-4 text-left font-black transition ${selected === payment.key
-                  ? 'border-amber-300 bg-brand text-white shadow-lg'
-                  : 'border-white/20 bg-white/5 text-white hover:bg-white/10'}`}
+                onClick={initiate}
+                disabled={busy}
+                className="mt-5 w-full rounded-full bg-brand p-3 font-black text-white transition hover:bg-[#ba5521] disabled:opacity-60"
               >
-                <span className="block">{payment.label}</span>
-                <small className="mt-1 block text-xs font-bold text-white/75">{payment.detail}</small>
+                {busy ? 'Initialisation…' : `Payer avec ${provider === 'moncash' ? 'MonCash' : 'NatCash'}`}
               </button>
-            ))}
-          </div>
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-200">Méthode actif</span>
-            <p className="mt-2 font-black text-white">{selectedProvider.label}</p>
-          </div>
-          <button className="mt-8 w-full rounded-full bg-brand px-6 py-3 font-black text-white transition hover:bg-[#ba5521]">
-            Payer maintenant
-          </button>
-          <p className="mt-4 text-center text-xs text-slate-300">Paiement sécurisé et chèque d'identité</p>
-        </aside>
-      </div>
+              {notice && (
+                <div className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm">
+                  <p className="font-bold">{notice}</p>
+                  {checkoutUrl && (
+                    <a href={checkoutUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block font-black text-brand underline">
+                      Ouvrir la page de paiement sandbox ↗
+                    </a>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </section>
   );
 }
 
-export default function Checkout() {
+export default function CheckoutPage() {
   return (
-    <Suspense fallback={<section className="container py-14"><div className="animate-pulse rounded-3xl bg-white p-8 shadow">Chargement du paiement...</div></section>}>
-      <CheckoutContent />
+    <Suspense fallback={<section className="container py-16">Chargement…</section>}>
+      <CheckoutForm />
     </Suspense>
   );
 }
-

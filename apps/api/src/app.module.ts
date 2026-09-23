@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaService } from './prisma.service';
+import { HttpExceptionFilter } from './common/http-exception.filter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
@@ -15,13 +17,17 @@ import { AdminModule } from './admin/admin.module';
     ThrottlerModule.forRoot([
       {
         name: 'default',
-        ttl: 60,
-        limit: 100
+        ttl: parseInt(process.env.RATE_LIMIT_TTL_SECONDS || '60', 10) * 1000,
+        limit: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
       }
     ]),
+    // Enregistré en global : tous les modules (dont AuthModule) partagent
+    // la même configuration JWT. Avant ce correctif, AuthModule importait un
+    // JwtModule vide et jwt.sign() échouait à l'exécution.
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'dev-secret',
-      signOptions: { expiresIn: '7d' }
+      global: true,
+      secret: process.env.JWT_SECRET || 'dev-secret-change-me',
+      signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
     }),
     AuthModule,
     UsersModule,
@@ -31,8 +37,13 @@ import { AdminModule } from './admin/admin.module';
     TicketsModule,
     AdminModule
   ],
-  providers: [PrismaService],
+  providers: [
+    PrismaService,
+    // Rate limiting appliqué à toutes les routes par défaut.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Format d'erreur JSON stable + logs, sur toutes les routes.
+    { provide: APP_FILTER, useClass: HttpExceptionFilter }
+  ],
   exports: [PrismaService]
 })
 export class AppModule {}
-

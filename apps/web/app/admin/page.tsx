@@ -2,121 +2,198 @@
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
+import { api } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
+
+interface Stats {
+  totalEvents: number;
+  totalTickets: number;
+  totalOrders: number;
+  revenue: number;
+  scannedToday: number;
+}
+
+interface AdminEvent {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  price: number;
+  ticketsAvailable: number;
+  eventDate: string;
+  city: { name: string };
+}
 
 export default function AdminPage() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const { user, loading } = useAuth();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [events, setEvents] = useState<AdminEvent[]>([]);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({ title: '', city: '', price: '', capacity: '', eventDate: '' });
+  const [creating, setCreating] = useState(false);
+  const [checkinCode, setCheckinCode] = useState('');
+  const [checkinMsg, setCheckinMsg] = useState('');
+  const [checkinBusy, setCheckinBusy] = useState(false);
+
+  const isAdmin = user?.role === 'ADMIN';
 
   useEffect(() => {
-    const role = window.localStorage.getItem('tikeAyiti.role') || 'PUBLIC';
-    setIsAdmin(role === 'ADMIN');
-  }, []);
+    if (loading || !isAdmin) return;
+    api<Stats>('/admin/dashboard')
+      .then(setStats)
+      .catch((e: any) => setError(e?.message || 'Dashboard inaccessible'));
+    api<AdminEvent[]>('/admin/events')
+      .then(setEvents)
+      .catch(() => {});
+  }, [loading, isAdmin]);
 
-  function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    setSaved(true);
+  async function createEvent(e: FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    setError('');
+    try {
+      await api('/admin/events', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: form.title,
+          cityId: form.city,
+          categoryId: '',
+          address: '',
+          eventDate: form.eventDate,
+          price: Number(form.price),
+          capacity: Number(form.capacity)
+        })
+      });
+      setForm({ title: '', city: '', price: '', capacity: '', eventDate: '' });
+      setError('');
+      api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
+    } catch (err: any) {
+      setError(err?.message || 'Création impossible');
+    } finally {
+      setCreating(false);
+    }
   }
 
-  if (!isAdmin) {
+  async function checkin(e: FormEvent) {
+    e.preventDefault();
+    setCheckinBusy(true);
+    setCheckinMsg('');
+    try {
+      const res = await api<{ message: string }>(`/admin/checkin/${checkinCode}`, { method: 'POST' });
+      setCheckinMsg(`✅ ${res.message}`);
+      setCheckinCode('');
+    } catch (err: any) {
+      setCheckinMsg(`❌ ${err?.message || 'Échec du check-in'}`);
+    } finally {
+      setCheckinBusy(false);
+    }
+  }
+
+  if (!loading && !user) {
     return (
-      <section className="container py-20">
-        <div className="rounded-[2rem] border border-red-100 bg-white p-12 text-center shadow-xl">
-          <p className="font-black uppercase tracking-[0.24em] text-brand">Accès réservé</p>
-          <h1 className="mt-4 text-4xl font-black">Espace administrateur</h1>
-          <p className="mt-4 text-slate-600">Cette zone est uniquement visible pour les comptes avec rôle administrateur.</p>
-          <div className="mt-8 flex justify-center gap-4">
-            <Link href="/login" className="rounded-full bg-brand px-6 py-3 font-black text-white">Se connecter</Link>
-            <Link href="/events" className="rounded-full border border-slate-300 px-6 py-3 font-black text-slate-700">Retour aux événements</Link>
-          </div>
-        </div>
+      <section className="container py-14">
+        <p className="font-bold">Connectez-vous pour accéder à cette page.</p>
+        <Link href="/login?next=/admin" className="mt-4 inline-block rounded-full bg-brand px-6 py-3 font-black text-white">Se connecter</Link>
+      </section>
+    );
+  }
+  if (!loading && user && !isAdmin) {
+    return (
+      <section className="container py-14">
+        <h1 className="text-3xl font-black">Accès refusé</h1>
+        <p className="mt-3 text-slate-600">Cette page est réservée aux administrateurs.</p>
       </section>
     );
   }
 
+  const input = 'w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand';
+
   return (
     <section className="container py-14">
-      <div className="mb-8 flex items-end justify-between">
-        <div>
-          <p className="font-black uppercase tracking-[0.2em] text-brand">Espace admin</p>
-          <h1 className="mt-2 text-4xl font-black">Publier un événement</h1>
+      <h1 className="text-4xl font-black">Administration</h1>
+      {error && <p className="mt-6 rounded-xl bg-red-50 p-4 font-bold text-red-700">{error}</p>}
+
+      {stats && (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ['Événements', stats.totalEvents],
+            ['Billets', stats.totalTickets],
+            ['Commandes', stats.totalOrders],
+            ['Revenu (HTG)', stats.revenue.toLocaleString('fr-FR')],
+            ['Scannés (24h)', stats.scannedToday]
+          ].map(([label, value]) => (
+            <div key={label as string} className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</p>
+              <p className="mt-2 text-2xl font-black text-brand">{value}</p>
+            </div>
+          ))}
         </div>
-        <span className="rounded-full bg-slate-900 px-4 py-2 text-xs font-black text-white">Admin</span>
+      )}
+
+      <div className="mt-10 grid gap-8 lg:grid-cols-2">
+        <div className="rounded-3xl border border-amber-100 bg-white p-7 shadow">
+          <h2 className="text-xl font-black">Créer un événement</h2>
+          <form onSubmit={createEvent} className="mt-5 grid gap-4">
+            <label className="text-sm font-bold">Titre
+              <input className={input} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="text-sm font-bold">ID ville
+                <input className={input} required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="cuid…" />
+              </label>
+              <label className="text-sm font-bold">Prix (HTG)
+                <input className={input} type="number" required min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="text-sm font-bold">Capacité
+                <input className={input} type="number" required min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+              </label>
+              <label className="text-sm font-bold">Date
+                <input className={input} type="datetime-local" required value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
+              </label>
+            </div>
+            <button disabled={creating} className="rounded-full bg-brand p-3 font-black text-white transition hover:bg-[#ba5521] disabled:opacity-60">
+              {creating ? 'Création…' : 'Créer (brouillon)'}
+            </button>
+            <p className="text-xs text-slate-400">Les IDs ville/catégorie sont temporaires — le sélecteur arrive dans la prochaine itération.</p>
+          </form>
+        </div>
+
+        <div className="rounded-3xl border border-amber-100 bg-white p-7 shadow">
+          <h2 className="text-xl font-black">Check-in (scan)</h2>
+          <form onSubmit={checkin} className="mt-5 flex gap-2">
+            <input
+              className={input}
+              placeholder="Code billet (ex. TIK-XXXX)"
+              value={checkinCode}
+              onChange={(e) => setCheckinCode(e.target.value)}
+            />
+            <button disabled={checkinBusy || !checkinCode} className="shrink-0 rounded-full bg-brand px-5 font-black text-white disabled:opacity-60">
+              Valider
+            </button>
+          </form>
+          {checkinMsg && <p className="mt-4 font-bold">{checkinMsg}</p>}
+        </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <form onSubmit={onSubmit} className="rounded-[2rem] border border-amber-100 bg-white p-8 shadow-xl">
-          <div className="grid gap-5 md:grid-cols-2">
-            <label className="block md:col-span-2">
-              <span className="text-sm font-black">Titre de l’événement</span>
-              <input className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" required />
-            </label>
-            <label className="block">
-              <span className="text-sm font-black">Région / Zone</span>
-              <input className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" placeholder="Port-au-Prince" required />
-            </label>
-            <label className="block">
-              <span className="text-sm font-black">Catégorie</span>
-              <select className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" required>
-                <option>Concert</option>
-                <option>Culture</option>
-                <option>Festival</option>
-                <option>Conférence</option>
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-sm font-black">Date</span>
-              <input type="date" className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" required />
-            </label>
-            <label className="block">
-              <span className="text-sm font-black">Prix (HTG)</span>
-              <input type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" required />
-            </label>
-            <label className="block md:col-span-2">
-              <span className="text-sm font-black">Description</span>
-              <textarea className="mt-2 min-h-[160px] w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-brand" required />
-            </label>
+      <h2 className="mt-10 text-2xl font-black">Événements</h2>
+      <div className="mt-4 space-y-3">
+        {events.map((ev) => (
+          <div key={ev.id} className="flex items-center justify-between rounded-2xl border border-amber-100 bg-white p-4">
+            <div>
+              <p className="font-bold">{ev.title}</p>
+              <p className="text-sm text-slate-500">
+                {new Date(ev.eventDate).toLocaleDateString('fr-FR')} · {ev.city?.name} · {ev.price.toLocaleString('fr-FR')} HTG · {ev.ticketsAvailable} restants
+              </p>
+            </div>
+            <span className={`rounded-full px-3 py-1 text-xs font-black ${
+              ev.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' :
+              ev.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'
+            }`}>{ev.status}</span>
           </div>
-
-          <div className="mt-8 flex flex-wrap gap-4">
-            <button className="rounded-full bg-brand px-7 py-3 font-black text-white transition hover:bg-[#ba5521]">
-              Publier l’événement
-            </button>
-            <button type="button" className="rounded-full border border-slate-300 px-7 py-3 font-black text-slate-700 transition hover:bg-slate-50">
-              Enregistrer comme brouillon
-            </button>
-          </div>
-
-          {saved && (
-            <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-900">
-              Événement publié avec succès.
-            </div>
-          )}
-        </form>
-
-        <aside className="rounded-[2rem] bg-slate-900 p-8 text-white shadow-xl">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-amber-200">Tableau</p>
-          <h2 className="mt-2 text-3xl font-black">Statistiques</h2>
-          <div className="mt-8 grid gap-4">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white/70">Événements</span>
-                <span className="font-black text-2xl">08</span>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white/70">Billets vendus</span>
-                <span className="font-black text-2xl">326</span>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white/70">Paiements actifs</span>
-                <span className="font-black text-2xl">2</span>
-              </div>
-            </div>
-          </div>
-        </aside>
+        ))}
+        {events.length === 0 && <p className="text-slate-500">Aucun événement.</p>}
       </div>
     </section>
   );
