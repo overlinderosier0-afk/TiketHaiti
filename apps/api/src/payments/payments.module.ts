@@ -5,6 +5,8 @@ import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
 import { QrService } from '../tickets/qr.service';
 import { PaymentSettlementService, Provider } from './payment-settlement.service';
+import { PaymentSweepService } from './payment-sweep.service';
+import { NotificationsModule, NotificationService } from '../notifications/notifications.module';
 import { verifyWebhookSignature } from './webhook-signature';
 
 class InitiatePaymentDto {
@@ -22,7 +24,11 @@ const PROVIDER_CONFIG = {
 
 @Controller('payments')
 class PaymentsController {
-  constructor(private prisma: PrismaService, private settlement: PaymentSettlementService) {}
+  constructor(
+    private prisma: PrismaService,
+    private settlement: PaymentSettlementService,
+    private notifications: NotificationService
+  ) {}
 
   /**
    * Le client choisit MonCash/NatCash au checkout. En l'absence d'API
@@ -90,6 +96,11 @@ class PaymentsController {
 
     const fresh = await this.prisma.order.findUnique({ where: { id: order.id } });
 
+    // Prévient l'admin qu'un paiement attend sa validation (email si
+    // configuré, sinon simple log). "Fire and forget" : la notification
+    // ne retarde ni ne casse jamais la réponse au client.
+    void this.notifyAdminOfPendingPayment(order, provider, userId).catch(() => {});
+
     return {
       provider,
       orderId: order.id,
@@ -108,6 +119,30 @@ class PaymentsController {
           `billets sont émis automatiquement.`
       }
     };
+  }
+
+  /**
+   * Rassemble le contexte (événement, client) et prévient l'admin.
+   * Le NotificationService garantit qu'aucune exception ne remonte.
+   */
+  private async notifyAdminOfPendingPayment(order: any, provider: Provider, userId: string): Promise<void> {
+    const [event, user] = await Promise.all([
+      this.prisma.event.findUnique({ where: { id: order.eventId }, select: { title: true } }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true, phone: true }
+      })
+    ]);
+    await this.notifications.notifyAdminPendingPayment({
+      provider,
+      orderId: order.id,
+      reference: order.paymentReference ?? null,
+      amount: order.total,
+      eventTitle: event?.title ?? 'Événement inconnu',
+      customerName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || userId,
+      customerContact: user?.phone || user?.email || '',
+      expiresAt: order.expiresAt ?? null
+    });
   }
 
   @Post('webhook/moncash')
@@ -179,8 +214,9 @@ class PaymentsController {
 }
 
 @Module({
+  imports: [NotificationsModule],
   controllers: [PaymentsController],
-  providers: [PrismaService, QrService, PaymentSettlementService],
+  providers: [PrismaService, QrService, PaymentSettlementService, PaymentSweepService],
   exports: [PaymentSettlementService]
 })
 export class PaymentsModule {}

@@ -6,13 +6,41 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { EmptyState, ErrorBox, Field, GhostButton, PageHead, PrimaryButton, StatusPill, inputCls } from '../../components/ui';
 
+interface ManualPaymentInfo {
+  provider: string;
+  providerLabel: string;
+  merchantNumber: string;
+  reference: string | null;
+  amount: number;
+  expiresAt: string | null;
+  instructions: string;
+}
+
 interface OrderItem {
   id: string;
   total: number;
   quantity: number;
   paymentStatus: string;
+  paymentReference: string | null;
+  paymentMethod: string | null;
+  expiresAt: string | null;
   createdAt: string;
   event: { title: string; eventDate: string };
+  manualPayment: ManualPaymentInfo | null;
+}
+
+function copyText(text: string, done: () => void) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(done).catch(done);
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    done();
+  }
 }
 
 function orderTone(status: string): 'green' | 'amber' | 'red' | 'slate' {
@@ -154,17 +182,67 @@ export default function ProfilePage() {
       )}
       <div className="mt-4 space-y-3">
         {orders.map((o) => (
-          <div key={o.id} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-            <div>
-              <p className="font-black text-slate-900">{o.event.title}</p>
-              <p className="text-sm font-bold text-slate-500">
-                {new Date(o.event.eventDate).toLocaleDateString('fr-FR')} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG
-              </p>
-            </div>
-            <StatusPill tone={orderTone(o.paymentStatus)}>{orderLabel(o.paymentStatus)}</StatusPill>
-          </div>
+          <OrderCard key={o.id} order={o} />
         ))}
       </div>
     </section>
+  );
+}
+
+function OrderCard({ order: o }: { order: OrderItem }) {
+  const [copied, setCopied] = useState(false);
+  const pending = o.paymentStatus === 'PENDING' && o.manualPayment;
+
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="font-black text-slate-900">{o.event.title}</p>
+          <p className="text-sm font-bold text-slate-500">
+            {new Date(o.event.eventDate).toLocaleDateString('fr-FR')} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG
+          </p>
+        </div>
+        <StatusPill tone={orderTone(o.paymentStatus)}>{orderLabel(o.paymentStatus)}</StatusPill>
+      </div>
+
+      {pending && o.manualPayment && (
+        <div className="mt-3 rounded-xl border-2 border-campy/20 bg-blue-50/60 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.15em] text-campy">
+            💳 Paiement {o.manualPayment.providerLabel} en attente
+          </p>
+          <p className="mt-2 text-sm font-bold text-slate-600">{o.manualPayment.instructions}</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-lg bg-white p-3">
+              <p className="text-xs font-black uppercase tracking-wider text-slate-400">Numéro marchand</p>
+              <p className="mt-1 font-mono text-lg font-black text-slate-900">
+                {o.manualPayment.merchantNumber || 'À configurer'}
+              </p>
+            </div>
+            <div className="rounded-lg bg-white p-3">
+              <p className="text-xs font-black uppercase tracking-wider text-slate-400">Référence (note du transfert)</p>
+              <div className="mt-1 flex items-center gap-2">
+                <p className="font-mono text-lg font-black text-campy">{o.manualPayment.reference}</p>
+                {o.manualPayment.reference && (
+                  <button
+                    onClick={() => copyText(o.manualPayment!.reference!, () => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1500);
+                    })}
+                    className="rounded-full bg-campy px-3 py-1 text-xs font-black text-white transition hover:bg-campyDark"
+                  >
+                    {copied ? 'Copié ✓' : 'Copier'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          {o.manualPayment.expiresAt && (
+            <p className="mt-2 text-xs font-bold text-amber-600">
+              ⏳ À régler avant le {new Date(o.manualPayment.expiresAt).toLocaleString('fr-FR')}, sinon la commande est annulée.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

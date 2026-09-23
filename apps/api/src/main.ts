@@ -19,13 +19,17 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  const config = new DocumentBuilder()
-    .setTitle('Tikè Ayiti API')
-    .setDescription('MVP billetterie haïtienne : événements, commandes, MonCash/NatCash, billets QR.')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
+  // Documentation interactive : utile en dev, exposée = surface
+  // d'attaque en production (énumération des routes). Désactivée en prod.
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Tikè Ayiti API')
+      .setDescription('MVP billetterie haïtienne : événements, commandes, MonCash/NatCash, billets QR.')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
+  }
 
   await app.listen(process.env.API_PORT || 3001);
 }

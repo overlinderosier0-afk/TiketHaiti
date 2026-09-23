@@ -1,0 +1,78 @@
+# Stack de PRODUCTION — Tikè Ayiti.
+#
+# Usage :
+#   cp .env.example .env        # puis renseigner les secrets (voir docs/DEPLOYMENT.md)
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Pré-requis DNS : deux enregistrements A vers l'IP du VPS :
+#   ${DOMAIN}       -> <ip du VPS>
+#   api.${DOMAIN}   -> <ip du VPS>
+# Caddy obtient et renouvelle automatiquement les certificats HTTPS.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tike}
+      # Mot de passe JAMAIS en dur : vient de l'environnement / du fichier .env.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD doit être défini}
+      POSTGRES_DB: ${POSTGRES_DB:-tikeayiti}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tike}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Pas de ports publiés : la base n'est accessible que sur le réseau interne.
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      # Construite depuis POSTGRES_* : une seule source de vérité pour le mot de passe.
+      # (prend le pas sur DATABASE_URL si celui-ci est aussi défini dans .env)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tike}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-tikeayiti}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Figé dans le JS au build : l'URL publique de l'API, vue par le navigateur.
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN:?DOMAIN doit être défini}
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN doit être défini}
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

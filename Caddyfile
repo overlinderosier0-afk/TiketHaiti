@@ -1,0 +1,21 @@
+# Reverse proxy de production — Tikè Ayiti.
+# Le domaine vient de la variable d'environnement DOMAIN (voir
+# docker-compose.prod.yml). Caddy obtient et renouvelle les
+# certificats Let's Encrypt automatiquement.
+#
+# DNS requis avant le premier démarrage :
+#   ${DOMAIN}      A  <ip du VPS>
+#   api.${DOMAIN}  A  <ip du VPS>
+
+{
+	# Décommentez pour recevoir les alertes d'expiration Let's Encrypt :
+	# email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	reverse_proxy web:3000
+}
+
+api.{$DOMAIN} {
+	reverse_proxy api:3001
+}

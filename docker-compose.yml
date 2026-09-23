@@ -1,15 +1,20 @@
+# Stack de DÉVELOPPEMENT local — Tikè Ayiti.
+# Pour la production, voir docker-compose.prod.yml + docs/DEPLOYMENT.md.
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: tike
-      POSTGRES_PASSWORD: tike
-      POSTGRES_DB: tikeayiti
+      POSTGRES_USER: ${POSTGRES_USER:-tike}
+      # Dev uniquement : valeur par défaut documentée, jamais utilisée en prod.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tike}
+      POSTGRES_DB: ${POSTGRES_DB:-tikeayiti}
     ports: ["5432:5432"]
     volumes: ["tike_pg:/var/lib/postgresql/data"]
   api:
     build: ./apps/api
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tike}:${POSTGRES_PASSWORD:-tike}@postgres:5432/${POSTGRES_DB:-tikeayiti}
     depends_on: [postgres]
     ports: ["3001:3001"]
 volumes:

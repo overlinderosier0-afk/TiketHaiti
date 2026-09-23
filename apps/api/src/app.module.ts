@@ -2,8 +2,10 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaService } from './prisma.service';
 import { HttpExceptionFilter } from './common/http-exception.filter';
+import { AUTH_THROTTLE } from './common/rate-limits';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
@@ -19,8 +21,13 @@ import { AdminModule } from './admin/admin.module';
         name: 'default',
         ttl: parseInt(process.env.RATE_LIMIT_TTL_SECONDS || '60', 10) * 1000,
         limit: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
-      }
+      },
+      // Limiteur strict dédié aux routes d'auth (anti brute-force),
+      // activé via @Throttle({ auth: ... }) sur login/register.
+      { name: 'auth', ttl: AUTH_THROTTLE.ttl, limit: AUTH_THROTTLE.limit }
     ]),
+    // Tâches planifiées (purge des commandes expirées, etc.).
+    ScheduleModule.forRoot(),
     // Enregistré en global : tous les modules (dont AuthModule) partagent
     // la même configuration JWT. Avant ce correctif, AuthModule importait un
     // JwtModule vide et jwt.sign() échouait à l'exécution.

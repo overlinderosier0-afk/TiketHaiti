@@ -1,9 +1,11 @@
 import { Global, Module, CanActivate, ExecutionContext, Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtService } from '@nestjs/jwt';
 import { IsEmail, IsString, MinLength, Length } from 'class-validator';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
+import { AUTH_THROTTLE } from '../common/rate-limits';
 
 export class RegisterDto {
   @IsString() firstName!: string;
@@ -42,6 +44,9 @@ export class JwtGuard implements CanActivate {
 export class AuthController {
   constructor(private prisma: PrismaService, private jwt: JwtService) {}
 
+  // Anti brute-force : 10 req/min par IP (configurable via
+  // AUTH_RATE_LIMIT_*). Le throttling global reste à 100 req/min.
+  @Throttle({ auth: AUTH_THROTTLE })
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
@@ -64,6 +69,7 @@ export class AuthController {
     return this.token(user);
   }
 
+  @Throttle({ auth: AUTH_THROTTLE })
   @Post('login')
   async login(@Body() dto: LoginDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });

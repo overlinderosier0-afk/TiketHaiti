@@ -82,13 +82,18 @@ class OrdersController {
   @UseGuards(JwtGuard)
   async my(@Req() req: any) {
     // Expiration paresseuse : les commandes impayées trop anciennes sont
-    // annulées et leurs places libérées, sans cron dédié.
+    // annulées et leurs places libérées (doublée par le cron, ceinture et
+    // bretelles).
     await this.settlement.expireStaleOrders(req.user.sub);
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: { userId: req.user.sub },
       include: { payments: true, tickets: true, event: { include: { city: true, category: true } } },
       orderBy: { createdAt: 'desc' }
     });
+    // Les commandes en attente embarquent leurs instructions de paiement
+    // (référence, numéro marchand) : l'utilisateur les retrouve ici même
+    // s'il a fermé l'onglet du checkout.
+    return orders.map((o) => ({ ...o, manualPayment: this.manualPaymentInfo(o) }));
   }
 
   @Get(':id')
@@ -104,7 +109,31 @@ class OrdersController {
       throw new UnauthorizedException('Commande inaccessible');
     }
 
-    return order;
+    return { ...order, manualPayment: this.manualPaymentInfo(order) };
+  }
+
+  /**
+   * Instructions de paiement manuel pour une commande en attente :
+   * null si la commande n'est plus en attente ou sans méthode choisie.
+   * Lecture seule — aucune logique métier modifiée.
+   */
+  private manualPaymentInfo(order: any) {
+    if (order.paymentStatus !== 'PENDING' || !order.paymentMethod) return null;
+    const provider = order.paymentMethod as 'MONCASH' | 'NATCASH';
+    const merchantNumber = this.settlement.merchantNumber(provider);
+    const providerLabel = provider === 'MONCASH' ? 'MonCash' : 'NatCash';
+    return {
+      provider,
+      providerLabel,
+      merchantNumber,
+      reference: order.paymentReference ?? null,
+      amount: order.total,
+      expiresAt: order.expiresAt ?? null,
+      instructions:
+        `Envoyez ${order.total.toLocaleString('fr-FR')} HTG au ${merchantNumber || '(numéro à configurer)'} ` +
+        `via ${providerLabel}, puis recopiez exactement la référence ${order.paymentReference} dans la ` +
+        `note du transfert. Notre équipe vérifie la réception et vos billets sont émis automatiquement.`
+    };
   }
 }
 
