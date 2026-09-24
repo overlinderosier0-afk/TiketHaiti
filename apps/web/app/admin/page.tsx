@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { api } from '../../lib/api';
+import { api, uploadFile, uploadUrl } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { ErrorBox, Field, GhostButton, PageHead, PrimaryButton, StatusPill, inputCls } from '../../components/ui';
 
@@ -50,7 +50,8 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', bannerUrl: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+  const [form, setForm] = useState({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [creating, setCreating] = useState(false);
@@ -60,7 +61,7 @@ export default function AdminPage() {
   const [pending, setPending] = useState<PendingOrder[]>([]);
   const [pendingMsg, setPendingMsg] = useState('');
   const [confirmRef, setConfirmRef] = useState<Record<string, string>>({});
-  const [bannerEdit, setBannerEdit] = useState<Record<string, string>>({});
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -96,13 +97,12 @@ export default function AdminPage() {
     setCreating(true);
     setError('');
     try {
-      await api('/admin/events', {
+      const created = await api<{ id: string }>('/admin/events', {
         method: 'POST',
         body: JSON.stringify({
           title: form.title,
           description: form.description,
           slug: `${slugify(form.title)}-${Date.now().toString(36)}`,
-          bannerUrl: form.bannerUrl.trim() || undefined,
           cityId: Number(form.cityId),
           categoryId: Number(form.categoryId),
           address: '',
@@ -111,7 +111,11 @@ export default function AdminPage() {
           capacity: Number(form.capacity)
         })
       });
-      setForm({ title: '', description: '', bannerUrl: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+      if (bannerFile) {
+        await uploadFile(`/admin/events/${created.id}/banner`, bannerFile);
+      }
+      setForm({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+      setBannerFile(null);
       setError('');
       api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
     } catch (err: any) {
@@ -121,18 +125,29 @@ export default function AdminPage() {
     }
   }
 
-  async function saveBanner(id: string) {
-    const url = (bannerEdit[id] ?? '').trim();
+  async function handleBannerUpload(id: string, file: File) {
+    setUploadingId(id);
+    setError('');
+    try {
+      await uploadFile(`/admin/events/${id}/banner`, file);
+      api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
+    } catch (err: any) {
+      setError(err?.message || "Envoi de l'affiche impossible");
+    } finally {
+      setUploadingId(null);
+    }
+  }
+
+  async function removeBanner(id: string) {
     setError('');
     try {
       await api(`/admin/events/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ bannerUrl: url || null })
+        body: JSON.stringify({ bannerUrl: null })
       });
-      setBannerEdit((b) => ({ ...b, [id]: '' }));
       api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
     } catch (err: any) {
-      setError(err?.message || "Sauvegarde de l'affiche impossible");
+      setError(err?.message || "Suppression de l'affiche impossible");
     }
   }
 
@@ -241,8 +256,14 @@ export default function AdminPage() {
             <Field label="Description">
               <textarea className={inputCls} required rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </Field>
-            <Field label="Affiche (URL de l'image, optionnel)">
-              <input className={inputCls} type="url" placeholder="https://…" value={form.bannerUrl} onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })} />
+            <Field label="Affiche (JPG, PNG ou WebP — 5 Mo max, optionnel)">
+              <input
+                className={inputCls}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => setBannerFile(e.target.files?.[0] ?? null)}
+              />
+              {bannerFile && <p className="mt-1 text-xs font-bold text-slate-500">📎 {bannerFile.name}</p>}
             </Field>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Ville">
@@ -368,11 +389,14 @@ export default function AdminPage() {
           <div key={ev.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                {ev.bannerUrl ? (
-                  <img src={ev.bannerUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
-                ) : (
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl">🖼️</div>
-                )}
+                {(() => {
+                  const src = uploadUrl(ev.bannerUrl);
+                  return src ? (
+                    <img src={src} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                  ) : (
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl">🖼️</div>
+                  );
+                })()}
                 <div>
                   <p className="font-black text-slate-900">{ev.title}</p>
                   <p className="text-sm font-bold text-slate-500">
@@ -382,19 +406,29 @@ export default function AdminPage() {
               </div>
               <StatusPill tone={eventStatusTone(ev.status)}>{ev.status}</StatusPill>
             </div>
-            <div className="mt-3 flex gap-2">
-              <input
-                className="w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
-                placeholder="URL de l'affiche… (vide pour retirer)"
-                value={bannerEdit[ev.id] ?? ev.bannerUrl ?? ''}
-                onChange={(e) => setBannerEdit((b) => ({ ...b, [ev.id]: e.target.value }))}
-              />
-              <button
-                onClick={() => saveBanner(ev.id)}
-                className="shrink-0 rounded-full bg-campy px-4 py-2 text-sm font-black text-white transition hover:bg-campyDark"
-              >
-                OK
-              </button>
+            <div className="mt-3 flex items-center gap-2">
+              <label className={`cursor-pointer rounded-full px-4 py-2 text-sm font-black transition ${uploadingId === ev.id ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-campy hover:bg-blue-100'}`}>
+                {uploadingId === ev.id ? "Envoi…" : "📤 Changer l'affiche"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={uploadingId === ev.id}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = '';
+                    if (f) handleBannerUpload(ev.id, f);
+                  }}
+                />
+              </label>
+              {ev.bannerUrl && (
+                <button
+                  onClick={() => removeBanner(ev.id)}
+                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-500 transition hover:bg-slate-200"
+                >
+                  Retirer
+                </button>
+              )}
             </div>
           </div>
         ))}

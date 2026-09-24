@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { api } from '../../../lib/api';
+import { api, uploadUrl } from '../../../lib/api';
 import { useAuth } from '../../../lib/auth';
 import { CategoryPill, ErrorBox, PrimaryButton, StatusPill, inputCls } from '../../../components/ui';
 
@@ -77,9 +77,9 @@ export default function EventDetailPage() {
       </Link>
 
       <div className="mt-6 max-w-3xl">
-        {event.bannerUrl ? (
+        {uploadUrl(event.bannerUrl) ? (
           <div className="relative overflow-hidden rounded-[1.8rem] shadow-sm">
-            <img src={event.bannerUrl} alt={event.title} className="h-64 w-full object-cover md:h-96" />
+            <img src={uploadUrl(event.bannerUrl)!} alt={event.title} className="h-64 w-full object-cover md:h-96" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
               <CategoryPill>{event.category?.name}</CategoryPill>

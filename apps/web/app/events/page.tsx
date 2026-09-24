@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { api } from '../../lib/api';
+import { api, uploadUrl } from '../../lib/api';
 import { CategoryPill, EmptyState, ErrorBox, PageHead, StatusPill } from '../../components/ui';
 
 interface EventItem {
@@ -85,9 +85,9 @@ export default function EventsPage() {
             href={`/events/${ev.slug || ev.id}`}
             className="group rounded-[1.8rem] border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1.5 hover:shadow-xl"
           >
-            {ev.bannerUrl && (
+            {uploadUrl(ev.bannerUrl) && (
               <div className="-mx-6 -mt-6 mb-6 h-44 overflow-hidden rounded-t-[1.8rem]">
-                <img src={ev.bannerUrl} alt={ev.title} className="h-full w-full object-cover transition group-hover:scale-105" />
+                <img src={uploadUrl(ev.bannerUrl)!} alt={ev.title} className="h-full w-full object-cover transition group-hover:scale-105" />
               </div>
             )}
             <CategoryPill>{ev.category?.name}</CategoryPill>

@@ -4,21 +4,31 @@
 import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { mkdirSync } from 'fs';
 import helmet from 'helmet';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 
 async function bootstrap() {
   // rawBody: true expose le corps brut des requêtes (req.rawBody),
   // indispensable pour vérifier la signature HMAC des webhooks de paiement.
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
-  app.use(helmet());
+  // Les affiches sont des ressources publiques chargées en cross-origin
+  // par le frontend (<img>) : same-origin les bloquerait.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.enableCors({
     origin: (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000').split(','),
     credentials: true
   });
+
+  // Affiches uploadées (POST /admin/events/:id/banner), servies sous /uploads/
+  const uploadDir = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
+  mkdirSync(uploadDir, { recursive: true });
+  app.useStaticAssets(uploadDir, { prefix: '/uploads/' });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new HttpExceptionFilter());

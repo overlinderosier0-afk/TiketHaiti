@@ -77,3 +77,38 @@ export interface AuthResponse {
   accessToken: string;
   user: User;
 }
+
+/** Envoie un fichier en multipart (ex. affiche d'événement) avec le token. */
+export async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const token = getToken();
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form
+  });
+  if (!res.ok) {
+    let message = `Envoi impossible (${res.status})`;
+    try {
+      const body = await res.json();
+      const m = (body as any)?.message;
+      message = Array.isArray(m) ? m.join(', ') : String(m ?? message);
+    } catch {
+      /* réponse non-JSON */
+    }
+    throw new ApiError(res.status, message);
+  }
+  return (await res.json()) as T;
+}
+
+/**
+ * Résout l'URL d'une image d'événement : les chemins /uploads/...
+ * (fichiers servis par l'API) sont préfixés avec l'URL de l'API,
+ * les URLs absolues passent telles quelles.
+ */
+export function uploadUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+}

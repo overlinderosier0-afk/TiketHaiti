@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { api } from '../lib/api';
+import { api, uploadUrl } from '../lib/api';
 
 interface EventItem {
   id: string;
@@ -214,9 +214,9 @@ function EventsShowcase() {
               key={event.id}
               className="rounded-[1.8rem] border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1.5 hover:shadow-xl"
             >
-              {event.bannerUrl && (
+              {uploadUrl(event.bannerUrl) && (
                 <div className="-mx-6 -mt-6 mb-6 h-44 overflow-hidden rounded-t-[1.8rem]">
-                  <img src={event.bannerUrl} alt={event.title} className="h-full w-full object-cover" />
+                  <img src={uploadUrl(event.bannerUrl)!} alt={event.title} className="h-full w-full object-cover" />
                 </div>
               )}
               <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-campy">

@@ -40,6 +40,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      # Les affiches uploadées survivent aux redéploiements.
+      - api_uploads:/app/uploads
     restart: unless-stopped
 
   web:
@@ -74,5 +77,6 @@ services:
 
 volumes:
   pgdata:
+  api_uploads:
   caddy_data:
   caddy_config:

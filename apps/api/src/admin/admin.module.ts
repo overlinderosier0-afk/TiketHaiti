@@ -1,4 +1,8 @@
-import { Module, Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Module, Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards, UseInterceptors, UploadedFile, NotFoundException, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
+import { join, basename } from 'path';
 import { IsString, IsOptional, IsInt, Min, IsDateString } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
@@ -6,6 +10,17 @@ import { AdminGuard } from '../auth/admin.guard';
 import { PaymentsModule } from '../payments/payments.module';
 import { PaymentSettlementService, Provider } from '../payments/payment-settlement.service';
 import { parsePage, pageResult } from '../common/pagination';
+
+/** Dossier des affiches uploadées (servi en statique sous /uploads/). */
+function uploadDir(): string {
+  return process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
+}
+
+function mimeToExt(mime: string): string {
+  if (mime === 'image/png') return '.png';
+  if (mime === 'image/webp') return '.webp';
+  return '.jpg';
+}
 
 class AdminEventDto {
   @IsString() title!: string;
@@ -73,6 +88,47 @@ class AdminController {
   @Delete('events/:id')
   async deleteEvent(@Param('id') id: string) {
     return this.prisma.event.delete({ where: { id } });
+  }
+
+  /**
+   * Upload de l'affiche d'un événement (JPEG/PNG/WebP, 5 Mo max).
+   * Le fichier est servi en statique sous /uploads/ ; bannerUrl est
+   * mis à jour avec le chemin relatif (le frontend préfixe avec
+   * l'URL de l'API). L'ancien fichier local est supprimé.
+   */
+  @Post('events/:id/banner')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (_req, _file, cb) => {
+        const dir = uploadDir();
+        mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+      },
+      filename: (req, file, cb) => {
+        cb(null, `banner-${req.params.id}-${Date.now()}${mimeToExt(file.mimetype)}`);
+      }
+    }),
+    fileFilter: (_req, file, cb) => {
+      const ok = ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype);
+      cb(ok ? null : new BadRequestException('Image JPEG, PNG ou WebP uniquement (5 Mo max).'), ok);
+    },
+    limits: { fileSize: 5 * 1024 * 1024 }
+  }))
+  async uploadBanner(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Aucun fichier reçu (champ "file").');
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) {
+      try { unlinkSync(file.path); } catch { /* ignore */ }
+      throw new NotFoundException('Événement introuvable');
+    }
+    if (event.bannerUrl?.startsWith('/uploads/')) {
+      try { unlinkSync(join(uploadDir(), basename(event.bannerUrl))); } catch { /* déjà supprimé */ }
+    }
+    const updated = await this.prisma.event.update({
+      where: { id },
+      data: { bannerUrl: `/uploads/${file.filename}` }
+    });
+    return { bannerUrl: updated.bannerUrl };
   }
 
   @Get('orders')
