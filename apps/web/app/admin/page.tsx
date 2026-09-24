@@ -52,6 +52,7 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerKey, setBannerKey] = useState(0);
   const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [creating, setCreating] = useState(false);
@@ -116,6 +117,7 @@ export default function AdminPage() {
       }
       setForm({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
       setBannerFile(null);
+      setBannerKey((k) => k + 1);
       setError('');
       api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
     } catch (err: any) {
@@ -258,6 +260,7 @@ export default function AdminPage() {
             </Field>
             <Field label="Affiche (JPG, PNG ou WebP — 5 Mo max, optionnel)">
               <input
+                key={bannerKey}
                 className={inputCls}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
