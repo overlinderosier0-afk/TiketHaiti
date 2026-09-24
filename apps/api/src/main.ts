@@ -1,3 +1,7 @@
+// Charge apps/api/.env (DATABASE_URL, JWT_SECRET, ...) — `nest start`
+// ne lit pas les fichiers .env tout seul, sans ça l'API ne voit que
+// les variables exportées dans le shell.
+import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
