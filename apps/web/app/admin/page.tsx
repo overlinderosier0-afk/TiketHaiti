@@ -49,7 +49,9 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', city: '', price: '', capacity: '', eventDate: '' });
+  const [form, setForm] = useState({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+  const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [creating, setCreating] = useState(false);
   const [checkinCode, setCheckinCode] = useState('');
   const [checkinMsg, setCheckinMsg] = useState('');
@@ -73,8 +75,19 @@ export default function AdminPage() {
     api<AdminEvent[]>('/admin/events')
       .then(setEvents)
       .catch(() => {});
+    api<{ id: number; name: string }[]>('/admin/cities').then(setCities).catch(() => {});
+    api<{ id: number; name: string }[]>('/admin/categories').then(setCategories).catch(() => {});
     loadPending();
   }, [loading, isAdmin, loadPending]);
+
+  function slugify(s: string) {
+    return s
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
 
   async function createEvent(e: FormEvent) {
     e.preventDefault();
@@ -85,15 +98,17 @@ export default function AdminPage() {
         method: 'POST',
         body: JSON.stringify({
           title: form.title,
-          cityId: form.city,
-          categoryId: '',
+          description: form.description,
+          slug: `${slugify(form.title)}-${Date.now().toString(36)}`,
+          cityId: Number(form.cityId),
+          categoryId: Number(form.categoryId),
           address: '',
           eventDate: form.eventDate,
           price: Number(form.price),
           capacity: Number(form.capacity)
         })
       });
-      setForm({ title: '', city: '', price: '', capacity: '', eventDate: '' });
+      setForm({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
       setError('');
       api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
     } catch (err: any) {
@@ -108,7 +123,10 @@ export default function AdminPage() {
     setCheckinBusy(true);
     setCheckinMsg('');
     try {
-      const res = await api<{ message: string }>(`/admin/checkin/${checkinCode}`, { method: 'POST' });
+      const res = await api<{ message: string }>('/admin/checkin', {
+        method: 'POST',
+        body: JSON.stringify({ code: checkinCode })
+      });
       setCheckinMsg(`✅ ${res.message}`);
       setCheckinCode('');
     } catch (err: any) {
@@ -203,18 +221,36 @@ export default function AdminPage() {
             <Field label="Titre">
               <input className={inputCls} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             </Field>
+            <Field label="Description">
+              <textarea className={inputCls} required rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </Field>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="ID ville">
-                <input className={inputCls} required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="cuid…" />
+              <Field label="Ville">
+                <select className={inputCls} required value={form.cityId} onChange={(e) => setForm({ ...form, cityId: e.target.value })}>
+                  <option value="">Choisir…</option>
+                  {cities.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </Field>
-              <Field label="Prix (HTG)">
-                <input className={inputCls} type="number" required min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              <Field label="Catégorie">
+                <select className={inputCls} required value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+                  <option value="">Choisir…</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-4">
+              <Field label="Prix (HTG)">
+                <input className={inputCls} type="number" required min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              </Field>
               <Field label="Capacité">
                 <input className={inputCls} type="number" required min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
               </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <Field label="Date">
                 <input className={inputCls} type="datetime-local" required value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
               </Field>
@@ -222,7 +258,7 @@ export default function AdminPage() {
             <PrimaryButton disabled={creating} className="w-full">
               {creating ? 'Création…' : 'Créer (brouillon)'}
             </PrimaryButton>
-            <p className="text-xs font-bold text-slate-400">Les IDs ville/catégorie sont temporaires — le sélecteur arrive dans la prochaine itération.</p>
+            <p className="text-xs font-bold text-slate-400">Le slug est généré automatiquement à partir du titre.</p>
           </form>
         </div>
 
@@ -231,7 +267,7 @@ export default function AdminPage() {
           <form onSubmit={checkin} className="mt-5 flex gap-2">
             <input
               className="w-full rounded-xl border border-slate-200 bg-white p-3 outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
-              placeholder="Code billet (ex. TIK-XXXX)"
+              placeholder="ID du billet (visible sur le billet)"
               value={checkinCode}
               onChange={(e) => setCheckinCode(e.target.value)}
             />

@@ -177,6 +177,25 @@ class AdminController {
     };
   }
 
+  // Check-in manuel : l'admin saisit l'ID du billet (visible sur le billet / QR).
+  @Post('checkin')
+  async checkin(@Body() body: { code: string }) {
+    const code = (body?.code || '').trim();
+    if (!code) throw new BadRequestException('Code billet requis');
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: code },
+      include: { event: true, order: true, user: true }
+    });
+    if (!ticket) throw new NotFoundException('Billet introuvable');
+    if (ticket.order.paymentStatus !== 'PAID') throw new BadRequestException('Billet non payé');
+    if (ticket.checkedIn) throw new BadRequestException('Billet déjà scanné');
+    await this.prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { checkedIn: true, checkedInAt: new Date() }
+    });
+    return { message: `Entrée validée : ${ticket.event.title} — ${ticket.user.firstName} ${ticket.user.lastName}` };
+  }
+
   // Référentiels pour les formulaires admin.
   @Get('cities')
   async cities() {
