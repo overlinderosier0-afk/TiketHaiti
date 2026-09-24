@@ -15,6 +15,7 @@ interface EventItem {
   price: number;
   ticketsAvailable: number;
   status: string;
+  bannerUrl: string | null;
 }
 
 interface PageResult {
@@ -84,6 +85,11 @@ export default function EventsPage() {
             href={`/events/${ev.slug || ev.id}`}
             className="group rounded-[1.8rem] border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1.5 hover:shadow-xl"
           >
+            {ev.bannerUrl && (
+              <div className="-mx-6 -mt-6 mb-6 h-44 overflow-hidden rounded-t-[1.8rem]">
+                <img src={ev.bannerUrl} alt={ev.title} className="h-full w-full object-cover transition group-hover:scale-105" />
+              </div>
+            )}
             <CategoryPill>{ev.category?.name}</CategoryPill>
             <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
               {new Date(ev.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {ev.city?.name}

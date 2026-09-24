@@ -22,6 +22,7 @@ interface AdminEvent {
   price: number;
   ticketsAvailable: number;
   eventDate: string;
+  bannerUrl: string | null;
   city: { name: string };
 }
 
@@ -49,7 +50,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+  const [form, setForm] = useState({ title: '', description: '', bannerUrl: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
   const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [creating, setCreating] = useState(false);
@@ -59,6 +60,7 @@ export default function AdminPage() {
   const [pending, setPending] = useState<PendingOrder[]>([]);
   const [pendingMsg, setPendingMsg] = useState('');
   const [confirmRef, setConfirmRef] = useState<Record<string, string>>({});
+  const [bannerEdit, setBannerEdit] = useState<Record<string, string>>({});
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -100,6 +102,7 @@ export default function AdminPage() {
           title: form.title,
           description: form.description,
           slug: `${slugify(form.title)}-${Date.now().toString(36)}`,
+          bannerUrl: form.bannerUrl.trim() || undefined,
           cityId: Number(form.cityId),
           categoryId: Number(form.categoryId),
           address: '',
@@ -108,7 +111,7 @@ export default function AdminPage() {
           capacity: Number(form.capacity)
         })
       });
-      setForm({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+      setForm({ title: '', description: '', bannerUrl: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
       setError('');
       api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
     } catch (err: any) {
@@ -118,8 +121,22 @@ export default function AdminPage() {
     }
   }
 
-  async function checkin(e: FormEvent) {
-    e.preventDefault();
+  async function saveBanner(id: string) {
+    const url = (bannerEdit[id] ?? '').trim();
+    setError('');
+    try {
+      await api(`/admin/events/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ bannerUrl: url || null })
+      });
+      setBannerEdit((b) => ({ ...b, [id]: '' }));
+      api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
+    } catch (err: any) {
+      setError(err?.message || "Sauvegarde de l'affiche impossible");
+    }
+  }
+
+  async function checkin(e: FormEvent) {    e.preventDefault();
     setCheckinBusy(true);
     setCheckinMsg('');
     try {
@@ -223,6 +240,9 @@ export default function AdminPage() {
             </Field>
             <Field label="Description">
               <textarea className={inputCls} required rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </Field>
+            <Field label="Affiche (URL de l'image, optionnel)">
+              <input className={inputCls} type="url" placeholder="https://…" value={form.bannerUrl} onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })} />
             </Field>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Ville">
@@ -345,14 +365,37 @@ export default function AdminPage() {
       <h2 className="mt-12 text-2xl font-black text-slate-900">Événements</h2>
       <div className="mt-4 space-y-3">
         {events.map((ev) => (
-          <div key={ev.id} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-            <div>
-              <p className="font-black text-slate-900">{ev.title}</p>
-              <p className="text-sm font-bold text-slate-500">
-                {new Date(ev.eventDate).toLocaleDateString('fr-FR')} · {ev.city?.name} · {ev.price.toLocaleString('fr-FR')} HTG · {ev.ticketsAvailable} restants
-              </p>
+          <div key={ev.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                {ev.bannerUrl ? (
+                  <img src={ev.bannerUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                ) : (
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl">🖼️</div>
+                )}
+                <div>
+                  <p className="font-black text-slate-900">{ev.title}</p>
+                  <p className="text-sm font-bold text-slate-500">
+                    {new Date(ev.eventDate).toLocaleDateString('fr-FR')} · {ev.city?.name} · {ev.price.toLocaleString('fr-FR')} HTG · {ev.ticketsAvailable} restants
+                  </p>
+                </div>
+              </div>
+              <StatusPill tone={eventStatusTone(ev.status)}>{ev.status}</StatusPill>
             </div>
-            <StatusPill tone={eventStatusTone(ev.status)}>{ev.status}</StatusPill>
+            <div className="mt-3 flex gap-2">
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
+                placeholder="URL de l'affiche… (vide pour retirer)"
+                value={bannerEdit[ev.id] ?? ev.bannerUrl ?? ''}
+                onChange={(e) => setBannerEdit((b) => ({ ...b, [ev.id]: e.target.value }))}
+              />
+              <button
+                onClick={() => saveBanner(ev.id)}
+                className="shrink-0 rounded-full bg-campy px-4 py-2 text-sm font-black text-white transition hover:bg-campyDark"
+              >
+                OK
+              </button>
+            </div>
           </div>
         ))}
         {events.length === 0 && <p className="font-bold text-slate-400">Aucun événement.</p>}

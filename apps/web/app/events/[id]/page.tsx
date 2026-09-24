@@ -13,6 +13,7 @@ interface EventDetail {
   description: string;
   address: string;
   artistName: string | null;
+  bannerUrl: string | null;
   eventDate: string;
   doorsOpen: string | null;
   price: number;
@@ -76,11 +77,27 @@ export default function EventDetailPage() {
       </Link>
 
       <div className="mt-6 max-w-3xl">
-        <CategoryPill>{event.category?.name}</CategoryPill>
-        <p className="mt-4 text-sm font-black uppercase tracking-[0.2em] text-campy">
-          {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {event.city?.name}
-        </p>
-        <h1 className="mt-3 text-5xl font-black leading-tight text-slate-900">{event.title}</h1>
+        {event.bannerUrl ? (
+          <div className="relative overflow-hidden rounded-[1.8rem] shadow-sm">
+            <img src={event.bannerUrl} alt={event.title} className="h-64 w-full object-cover md:h-96" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
+              <CategoryPill>{event.category?.name}</CategoryPill>
+              <h1 className="mt-3 text-4xl font-black leading-tight text-white md:text-5xl">{event.title}</h1>
+              <p className="mt-2 text-sm font-black uppercase tracking-[0.2em] text-white/85">
+                {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {event.city?.name}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <CategoryPill>{event.category?.name}</CategoryPill>
+            <p className="mt-4 text-sm font-black uppercase tracking-[0.2em] text-campy">
+              {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {event.city?.name}
+            </p>
+            <h1 className="mt-3 text-5xl font-black leading-tight text-slate-900">{event.title}</h1>
+          </>
+        )}
         {event.artistName && <p className="mt-3 text-xl font-bold text-slate-600">{event.artistName}</p>}
         <p className="mt-6 text-lg leading-8 text-slate-600">{event.description}</p>
         <div className="mt-6 space-y-1 text-sm font-bold text-slate-500">
