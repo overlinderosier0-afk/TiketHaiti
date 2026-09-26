@@ -195,7 +195,7 @@ function OrderCard({ order: o }: { order: OrderItem }) {
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-black text-slate-900">{o.event.title}</p>
           <p className="text-sm font-bold text-slate-500">

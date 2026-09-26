@@ -104,7 +104,7 @@ function Hero() {
           <p className="inline-block rounded-full bg-blue-50 px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-campy">
             🎟️ La billetterie 100% haïtienne
           </p>
-          <h1 className="mt-6 text-5xl font-black leading-[1.05] text-slate-900 md:text-6xl">
+          <h1 className="mt-6 text-4xl font-black leading-[1.05] text-slate-900 sm:text-5xl md:text-6xl">
             Tes billets d'événements,{' '}
             <span className="text-campy">sans faire la queue.</span>
           </h1>

@@ -95,7 +95,7 @@ export default function EventDetailPage() {
             <p className="mt-4 text-sm font-black uppercase tracking-[0.2em] text-campy">
               {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {event.city?.name}
             </p>
-            <h1 className="mt-3 text-5xl font-black leading-tight text-slate-900">{event.title}</h1>
+            <h1 className="mt-3 text-4xl font-black leading-tight text-slate-900 md:text-5xl">{event.title}</h1>
           </>
         )}
         {event.artistName && <p className="mt-3 text-xl font-bold text-slate-600">{event.artistName}</p>}
@@ -130,7 +130,7 @@ export default function EventDetailPage() {
               className={`${inputCls} ml-2 !mt-0 w-20 text-center`}
             />
           </label>
-          <PrimaryButton onClick={buy} disabled={busy || event.ticketsAvailable <= 0}>
+          <PrimaryButton onClick={buy} disabled={busy || event.ticketsAvailable <= 0} className="w-full sm:w-auto">
             {busy ? '…' : 'Prendre mes billets →'}
           </PrimaryButton>
         </div>

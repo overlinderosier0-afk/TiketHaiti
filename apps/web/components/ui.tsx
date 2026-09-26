@@ -140,7 +140,7 @@ export function EmptyState({
   actionLabel?: string;
 }) {
   return (
-    <div className="rounded-[1.8rem] border border-dashed border-slate-300 bg-white p-12 text-center">
+    <div className="rounded-[1.8rem] border border-dashed border-slate-300 bg-white p-8 text-center md:p-12">
       <p className="text-xl font-black text-slate-900">{title}</p>
       <p className="mt-2 text-slate-500">{text}</p>
       {actionHref && actionLabel && (

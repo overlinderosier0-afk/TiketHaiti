@@ -268,7 +268,7 @@ export default function AdminPage() {
               />
               {bannerFile && <p className="mt-1 text-xs font-bold text-slate-500">📎 {bannerFile.name}</p>}
             </Field>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Ville">
                 <select className={inputCls} required value={form.cityId} onChange={(e) => setForm({ ...form, cityId: e.target.value })}>
                   <option value="">Choisir…</option>
@@ -286,7 +286,7 @@ export default function AdminPage() {
                 </select>
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Prix (HTG)">
                 <input className={inputCls} type="number" required min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
               </Field>
@@ -294,7 +294,7 @@ export default function AdminPage() {
                 <input className={inputCls} type="number" required min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Date">
                 <input className={inputCls} type="datetime-local" required value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
               </Field>

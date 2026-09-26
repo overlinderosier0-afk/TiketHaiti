@@ -56,7 +56,7 @@ export default function EventsPage() {
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Ville… (ex. Jacmel)"
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
+            className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
           />
           <button className="rounded-full bg-campy px-5 py-2 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">
             Filtrer
