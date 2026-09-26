@@ -12,6 +12,7 @@ export default function AdminAwareNav() {
         Tikè Ayiti <span className="text-campy">✳</span>
       </Link>
       <div className="hidden gap-6 text-sm font-bold text-slate-700 md:flex">
+        <Link href="/" className="transition hover:text-campy">Accueil</Link>
         <Link href="/events" className="transition hover:text-campy">Événements</Link>
         {user?.role === 'ADMIN' && <Link href="/admin" className="transition hover:text-campy">Admin</Link>}
         <Link href="/tickets" className="transition hover:text-campy">Mes billets</Link>
