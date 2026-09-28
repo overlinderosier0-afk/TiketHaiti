@@ -48,11 +48,12 @@ export default function EventDetailPage() {
     setBusy(true);
     setError('');
     try {
-      const res = await api<{ orderId: string }>('/orders', {
+      const res = await api<{ orderId: string; free?: boolean }>('/orders', {
         method: 'POST',
         body: JSON.stringify({ eventId: event.id, quantity: qty })
       });
-      router.push(`/checkout?order=${res.orderId}`);
+      // Événement gratuit : les billets sont déjà émis, direction mes billets.
+      router.push(res.free ? '/tickets' : `/checkout?order=${res.orderId}`);
     } catch (e: any) {
       setError(e?.message || 'Commande impossible');
     } finally {
@@ -110,8 +111,8 @@ export default function EventDetailPage() {
 
       <div className="mt-10 rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm md:flex md:items-center md:justify-between">
         <div>
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Entrée générale</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{event.price.toLocaleString('fr-FR')} HTG</p>
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">{event.price > 0 ? 'Entrée générale' : 'Entrée gratuite'}</p>
+          <p className="mt-2 text-3xl font-black text-slate-900">{event.price > 0 ? `${event.price.toLocaleString('fr-FR')} HTG` : 'Gratuit'}</p>
           <p className="mt-1 text-sm font-bold text-slate-500">Billet numérique · QR sécurisé</p>
           <div className="mt-2">
             {event.ticketsAvailable > 0 ? (
@@ -131,7 +132,7 @@ export default function EventDetailPage() {
             />
           </label>
           <PrimaryButton onClick={buy} disabled={busy || event.ticketsAvailable <= 0} className="w-full sm:w-auto">
-            {busy ? '…' : 'Prendre mes billets →'}
+            {busy ? '…' : event.price > 0 ? 'Prendre mes billets →' : 'Obtenir mes billets gratuits →'}
           </PrimaryButton>
         </div>
       </div>

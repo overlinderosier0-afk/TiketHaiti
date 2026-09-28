@@ -50,7 +50,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+  const [form, setForm] = useState({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '', isFree: false });
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerKey, setBannerKey] = useState(0);
   const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
@@ -108,14 +108,14 @@ export default function AdminPage() {
           categoryId: Number(form.categoryId),
           address: '',
           eventDate: form.eventDate,
-          price: Number(form.price),
+          price: form.isFree ? 0 : Number(form.price),
           capacity: Number(form.capacity)
         })
       });
       if (bannerFile) {
         await uploadFile(`/admin/events/${created.id}/banner`, bannerFile);
       }
-      setForm({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '' });
+      setForm({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '', isFree: false });
       setBannerFile(null);
       setBannerKey((k) => k + 1);
       setError('');
@@ -286,9 +286,28 @@ export default function AdminPage() {
                 </select>
               </Field>
             </div>
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-cream p-3">
+              <input
+                type="checkbox"
+                checked={form.isFree}
+                onChange={(e) => setForm({ ...form, isFree: e.target.checked })}
+                className="h-5 w-5 accent-campy"
+              />
+              <span className="text-sm font-black text-slate-800">
+                Événement gratuit <span className="font-bold text-slate-500">— les billets sont émis sans paiement</span>
+              </span>
+            </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Prix (HTG)">
-                <input className={inputCls} type="number" required min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                <input
+                  className={inputCls}
+                  type="number"
+                  required={!form.isFree}
+                  min={0}
+                  disabled={form.isFree}
+                  value={form.isFree ? 0 : form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                />
               </Field>
               <Field label="Capacité">
                 <input className={inputCls} type="number" required min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
@@ -403,7 +422,7 @@ export default function AdminPage() {
                 <div>
                   <p className="font-black text-slate-900">{ev.title}</p>
                   <p className="text-sm font-bold text-slate-500">
-                    {new Date(ev.eventDate).toLocaleDateString('fr-FR')} · {ev.city?.name} · {ev.price.toLocaleString('fr-FR')} HTG · {ev.ticketsAvailable} restants
+                    {new Date(ev.eventDate).toLocaleDateString('fr-FR')} · {ev.city?.name} · {ev.price > 0 ? `${ev.price.toLocaleString('fr-FR')} HTG` : 'Gratuit'} · {ev.ticketsAvailable} restants
                   </p>
                 </div>
               </div>

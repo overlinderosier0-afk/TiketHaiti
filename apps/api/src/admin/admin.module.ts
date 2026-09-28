@@ -33,7 +33,7 @@ class AdminEventDto {
   @IsOptional() @IsString() artistName?: string;
   @IsDateString() eventDate!: string;
   @IsOptional() @IsDateString() doorsOpen?: string;
-  @IsInt() @Min(1) price!: number;
+  @IsInt() @Min(0) price!: number;
   @IsInt() @Min(1) capacity!: number;
 }
 

@@ -199,7 +199,7 @@ function OrderCard({ order: o }: { order: OrderItem }) {
         <div>
           <p className="font-black text-slate-900">{o.event.title}</p>
           <p className="text-sm font-bold text-slate-500">
-            {new Date(o.event.eventDate).toLocaleDateString('fr-FR')} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG
+            {new Date(o.event.eventDate).toLocaleDateString('fr-FR')} · {o.quantity} billet(s) · {o.total > 0 ? `${o.total.toLocaleString('fr-FR')} HTG` : 'Gratuit'}
           </p>
         </div>
         <StatusPill tone={orderTone(o.paymentStatus)}>{orderLabel(o.paymentStatus)}</StatusPill>

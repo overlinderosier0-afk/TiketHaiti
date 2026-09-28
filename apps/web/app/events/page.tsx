@@ -96,7 +96,7 @@ export default function EventsPage() {
             </p>
             <h3 className="mt-2 text-2xl font-black text-slate-900">{ev.title}</h3>
             <div className="mt-5 flex items-center justify-between">
-              <p className="text-lg font-black text-slate-900">{ev.price.toLocaleString('fr-FR')} HTG</p>
+              <p className="text-lg font-black text-slate-900">{ev.price > 0 ? `${ev.price.toLocaleString('fr-FR')} HTG` : 'Gratuit'}</p>
               {ev.ticketsAvailable > 0 ? (
                 <StatusPill tone="green">{ev.ticketsAvailable} billets</StatusPill>
               ) : (

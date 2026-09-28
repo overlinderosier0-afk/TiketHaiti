@@ -18,10 +18,6 @@ class OrdersController {
   @Post()
   @UseGuards(JwtGuard)
   async create(@Body() dto: CreateOrderDto, @Req() req: any) {
-    // Référence courte générée avant la transaction (unicité vérifiée).
-    const paymentReference = await this.settlement.generatePaymentReference();
-    const expiresAt = this.settlement.expiryFromNow();
-
     // Réserve les places et crée la commande dans une transaction pour
     // éviter toute survente en cas de requêtes concurrentes.
     const result = await this.prisma.$transaction(async (tx) => {
@@ -36,6 +32,29 @@ class OrdersController {
         where: { id: dto.eventId },
         data: { ticketsAvailable: { decrement: dto.quantity } }
       });
+
+      // Événement gratuit (prix 0) : pas de paiement, commande soldée et
+      // billets émis immédiatement — aucun passage par le checkout.
+      if (event.price <= 0) {
+        const order = await tx.order.create({
+          data: {
+            userId: req.user.sub,
+            eventId: dto.eventId,
+            quantity: dto.quantity,
+            total: 0,
+            paymentMethod: null,
+            paymentStatus: 'PAID',
+            paymentReference: null,
+            expiresAt: null
+          }
+        });
+        await this.settlement.issueTickets(tx, order);
+        return { order, free: true as const };
+      }
+
+      // Référence courte générée avant la création (unicité vérifiée).
+      const paymentReference = await this.settlement.generatePaymentReference();
+      const expiresAt = this.settlement.expiryFromNow();
 
       const total = event.price * dto.quantity;
       const order = await tx.order.create({
@@ -66,13 +85,14 @@ class OrdersController {
         });
       }
 
-      return order;
+      return { order, free: false as const };
     });
 
     return {
-      order: result,
-      checkoutUrl: dto.paymentMethod ? `/payments/${dto.paymentMethod.toLowerCase()}/initiate` : null,
-      orderId: result.id
+      order: result.order,
+      checkoutUrl: result.free ? null : (dto.paymentMethod ? `/payments/${dto.paymentMethod.toLowerCase()}/initiate` : null),
+      orderId: result.order.id,
+      free: result.free
     };
   }
 

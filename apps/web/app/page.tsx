@@ -227,7 +227,7 @@ function EventsShowcase() {
               </p>
               <h3 className="mt-2 text-2xl font-black text-slate-900">{event.title}</h3>
               <p className="mt-3 text-sm font-bold text-slate-600">
-                À partir de {event.price.toLocaleString('fr-FR')} HTG
+                {event.price > 0 ? `À partir de ${event.price.toLocaleString('fr-FR')} HTG` : 'Entrée gratuite'}
               </p>
               <Link
                 href={`/events/${event.slug || event.id}`}

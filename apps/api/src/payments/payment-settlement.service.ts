@@ -61,6 +61,37 @@ export class PaymentSettlementService {
       : process.env.MERCHANT_NATCASH_NUMBER || '';
   }
 
+  /**
+   * Émet les billets d'une commande (QR signé HMAC). Doit être appelé à
+   * l'intérieur d'une transaction Prisma — jamais hors transaction.
+   */
+  async issueTickets(tx: any, order: { id: string; eventId: string; userId: string; quantity: number }) {
+    for (let i = 0; i < order.quantity; i++) {
+      const ticketId = `${order.id}-T${i + 1}`;
+      const qrPayload = {
+        ticketId,
+        orderId: order.id,
+        eventId: order.eventId,
+        userId: order.userId,
+        issuedAt: new Date().toISOString()
+      };
+      const { signature: qrSignature } = this.qr.signPayload(qrPayload);
+      const qrImage = await QRCode.toDataURL(JSON.stringify({ ...qrPayload, signature: qrSignature }));
+
+      await tx.ticket.create({
+        data: {
+          id: ticketId,
+          orderId: order.id,
+          eventId: order.eventId,
+          userId: order.userId,
+          qrPayload: JSON.stringify(qrPayload),
+          qrSignature,
+          qrImage
+        }
+      });
+    }
+  }
+
   async settleOrder(orderId: string, opts: SettleOptions) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -105,30 +136,7 @@ export class PaymentSettlementService {
 
       if (opts.succeeded) {
         // Émission des billets avec QR signé HMAC.
-        for (let i = 0; i < order.quantity; i++) {
-          const ticketId = `${order.id}-T${i + 1}`;
-          const qrPayload = {
-            ticketId,
-            orderId: order.id,
-            eventId: order.eventId,
-            userId: order.userId,
-            issuedAt: new Date().toISOString()
-          };
-          const { signature: qrSignature } = this.qr.signPayload(qrPayload);
-          const qrImage = await QRCode.toDataURL(JSON.stringify({ ...qrPayload, signature: qrSignature }));
-
-          await tx.ticket.create({
-            data: {
-              id: ticketId,
-              orderId: order.id,
-              eventId: order.eventId,
-              userId: order.userId,
-              qrPayload: JSON.stringify(qrPayload),
-              qrSignature,
-              qrImage
-            }
-          });
-        }
+        await this.issueTickets(tx, order);
       } else {
         // Échec : on libère les places réservées.
         await tx.event.update({
