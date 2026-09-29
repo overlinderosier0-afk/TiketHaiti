@@ -1,12 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, Suspense, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth';
 import { ErrorBox, Field, PrimaryButton, inputCls } from '../../components/ui';
 
 function LoginForm() {
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/events';
@@ -14,6 +14,11 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Déjà connecté : pas besoin du formulaire, on redirige.
+  useEffect(() => {
+    if (!loading && user) router.replace(next);
+  }, [loading, user, next, router]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();

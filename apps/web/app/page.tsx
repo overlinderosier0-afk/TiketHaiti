@@ -343,7 +343,7 @@ function Categories() {
           })}
         </div>
         <p className="mt-4 text-center text-[11px] font-medium text-slate-400">
-          Photos : contributeurs Flickr, licences Creative Commons
+          Photos : contributeurs Flickr et Wikimedia Commons (tuile « Conférence » : Biswarup Ganguly, CC BY), licences Creative Commons
         </p>
       </div>
     </section>
