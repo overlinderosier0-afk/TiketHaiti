@@ -50,7 +50,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '', isFree: false });
+  const [form, setForm] = useState({ title: '', description: '', address: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '', isFree: false, isDraft: false });
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerKey, setBannerKey] = useState(0);
   const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
@@ -106,16 +106,17 @@ export default function AdminPage() {
           slug: `${slugify(form.title)}-${Date.now().toString(36)}`,
           cityId: Number(form.cityId),
           categoryId: Number(form.categoryId),
-          address: '',
+          address: form.address.trim() || undefined,
           eventDate: form.eventDate,
           price: form.isFree ? 0 : Number(form.price),
-          capacity: Number(form.capacity)
+          capacity: Number(form.capacity),
+          status: form.isDraft ? 'DRAFT' : 'PUBLISHED'
         })
       });
       if (bannerFile) {
         await uploadFile(`/admin/events/${created.id}/banner`, bannerFile);
       }
-      setForm({ title: '', description: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '', isFree: false });
+      setForm({ title: '', description: '', address: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '', isFree: false, isDraft: false });
       setBannerFile(null);
       setBannerKey((k) => k + 1);
       setError('');
@@ -153,8 +154,20 @@ export default function AdminPage() {
     }
   }
 
-  async function removeEvent(id: string, title: string) {
-    if (!window.confirm(`Supprimer définitivement « ${title} » ? Cette action est irréversible.`)) return;
+  async function setEventStatus(id: string, status: 'DRAFT' | 'PUBLISHED' | 'CANCELLED') {
+    setError('');
+    try {
+      await api(`/admin/events/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      });
+      api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
+    } catch (err: any) {
+      setError(err?.message || 'Changement de statut impossible');
+    }
+  }
+
+  async function removeEvent(id: string, title: string) {    if (!window.confirm(`Supprimer définitivement « ${title} » ? Cette action est irréversible.`)) return;
     setError('');
     try {
       await api(`/admin/events/${id}`, { method: 'DELETE' });
@@ -269,6 +282,9 @@ export default function AdminPage() {
             <Field label="Description">
               <textarea className={inputCls} required rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </Field>
+            <Field label="Adresse / lieu (optionnel)">
+              <input className={inputCls} placeholder="Ex. Centre culturel Caraïbes, rue Chavannes, Pétion-Ville" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            </Field>
             <Field label="Affiche (JPG, PNG ou WebP — 5 Mo max, optionnel)">
               <input
                 key={bannerKey}
@@ -330,8 +346,19 @@ export default function AdminPage() {
               </Field>
             </div>
             <PrimaryButton disabled={creating} className="w-full">
-              {creating ? 'Création…' : 'Créer (brouillon)'}
+              {creating ? 'Création…' : 'Créer l\u2019événement'}
             </PrimaryButton>
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-cream p-3">
+              <input
+                type="checkbox"
+                checked={form.isDraft}
+                onChange={(e) => setForm({ ...form, isDraft: e.target.checked })}
+                className="h-5 w-5 accent-campy"
+              />
+              <span className="text-sm font-black text-slate-800">
+                Enregistrer comme brouillon <span className="font-bold text-slate-500">— invisible dans le catalogue tant qu'il n'est pas publié</span>
+              </span>
+            </label>
             <p className="text-xs font-bold text-slate-400">Le slug est généré automatiquement à partir du titre.</p>
           </form>
         </div>
@@ -439,7 +466,22 @@ export default function AdminPage() {
               </div>
               <StatusPill tone={eventStatusTone(ev.status)}>{ev.status}</StatusPill>
             </div>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {ev.status === 'PUBLISHED' ? (
+                <button
+                  onClick={() => setEventStatus(ev.id, 'DRAFT')}
+                  className="rounded-full bg-amber-100 px-4 py-2 text-sm font-black text-amber-700 transition hover:bg-amber-200"
+                >
+                  ⏸️ Dépublier
+                </button>
+              ) : (
+                <button
+                  onClick={() => setEventStatus(ev.id, 'PUBLISHED')}
+                  className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-emerald-200"
+                >
+                  🚀 Publier
+                </button>
+              )}
               <label className={`cursor-pointer rounded-full px-4 py-2 text-sm font-black transition ${uploadingId === ev.id ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-campy hover:bg-blue-100'}`}>
                 {uploadingId === ev.id ? "Envoi…" : "📤 Changer l'affiche"}
                 <input

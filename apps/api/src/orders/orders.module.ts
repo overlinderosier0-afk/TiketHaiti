@@ -27,14 +27,18 @@ class OrdersController {
       if (new Date(event.eventDate) < new Date()) {
         throw new BadRequestException('Cet événement est déjà terminé');
       }
-      if (event.ticketsAvailable < dto.quantity) {
-        throw new BadRequestException(`Plus que ${event.ticketsAvailable} place(s) disponible(s)`);
-      }
 
-      await tx.event.update({
-        where: { id: dto.eventId },
+      // Décrément atomique et conditionnel : une seule requête réserve les
+      // places, donc deux achats simultanés ne peuvent pas vendre plus que
+      // la capacité (pas de survente en cas de requêtes concurrentes).
+      const stock = await tx.event.updateMany({
+        where: { id: dto.eventId, ticketsAvailable: { gte: dto.quantity } },
         data: { ticketsAvailable: { decrement: dto.quantity } }
       });
+      if (stock.count === 0) {
+        const fresh = await tx.event.findUnique({ where: { id: dto.eventId }, select: { ticketsAvailable: true } });
+        throw new BadRequestException(`Plus que ${fresh?.ticketsAvailable ?? 0} place(s) disponible(s)`);
+      }
 
       // Événement gratuit (prix 0) : pas de paiement, commande soldée et
       // billets émis immédiatement — aucun passage par le checkout.

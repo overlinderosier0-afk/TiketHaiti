@@ -3,7 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import { IsString, IsOptional, IsInt, Min, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, IsDateString, IsIn } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
 import { AdminGuard } from '../auth/admin.guard';
@@ -35,6 +35,7 @@ class AdminEventDto {
   @IsOptional() @IsDateString() doorsOpen?: string;
   @IsInt() @Min(0) price!: number;
   @IsInt() @Min(1) capacity!: number;
+  @IsOptional() @IsIn(['DRAFT', 'PUBLISHED', 'CANCELLED']) status?: string;
 }
 
 class ConfirmOrderDto {
@@ -71,7 +72,7 @@ class AdminController {
         price: dto.price,
         capacity: dto.capacity,
         ticketsAvailable: dto.capacity,
-        status: 'PUBLISHED'
+        status: (dto.status as 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | undefined) ?? 'PUBLISHED'
       }
     });
   }
@@ -232,23 +233,24 @@ class AdminController {
 
   @Get('dashboard')
   async dashboard() {
-    const [events, orders, tickets, payments, revenue] = await Promise.all([
+    const dayAgo = new Date(Date.now() - 24 * 3600 * 1000);
+    const [totalEvents, totalOrders, totalTickets, revenue, scannedToday] = await Promise.all([
       this.prisma.event.count(),
       this.prisma.order.count(),
       this.prisma.ticket.count(),
-      this.prisma.payment.count(),
       this.prisma.order.aggregate({
         _sum: { total: true },
         where: { paymentStatus: 'PAID' }
-      })
+      }),
+      this.prisma.ticket.count({ where: { checkedInAt: { gte: dayAgo } } })
     ]);
 
     return {
-      events,
-      orders,
-      tickets,
-      payments,
-      revenue: revenue._sum.total ?? 0
+      totalEvents,
+      totalTickets,
+      totalOrders,
+      revenue: revenue._sum.total ?? 0,
+      scannedToday
     };
   }
 

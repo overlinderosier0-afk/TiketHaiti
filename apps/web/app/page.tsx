@@ -143,10 +143,10 @@ function Hero() {
             </a>
           </div>
           <div className="mt-8 flex flex-wrap gap-2">
-            {['Concert', 'Festival', 'Soirée', 'Sport'].map((c) => (
+            {['Concert', 'Festival', 'Culture', 'Sport'].map((c) => (
               <Link
                 key={c}
-                href="/events"
+                href={`/events?category=${encodeURIComponent(c)}`}
                 className="rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-black text-slate-600 backdrop-blur transition hover:border-campy hover:text-campy"
               >
                 {c}
@@ -289,14 +289,26 @@ function EventsShowcase() {
 
 /** Tuiles de catégories avec vraies photos (liens vers le catalogue). */
 function Categories() {
-  const cats = [
-    { name: 'Concerts', img: '/categories/concert.jpg' },
-    { name: 'Festivals', img: '/categories/festival.jpg' },
-    { name: 'Soirées', img: '/categories/soiree.jpg' },
-    { name: 'Sport', img: '/categories/sport.jpg' },
-    { name: 'Théâtre', img: '/categories/theatre.jpg' },
-    { name: 'Conférences', img: '/categories/conference.jpg' }
-  ];
+  // Tuiles alimentées par les vraies catégories en base (endpoint public).
+  // Chaque tuile filtre le catalogue : /events?category=Nom.
+  const IMG_BY_CATEGORY: Record<string, string> = {
+    concert: '/categories/concert.jpg',
+    festival: '/categories/festival.jpg',
+    culture: '/categories/soiree.jpg',
+    sport: '/categories/sport.jpg',
+    conference: '/categories/conference.jpg'
+  };
+  const FALLBACK_IMG = '/categories/soiree.jpg';
+  const normalize = (s: string) =>
+    s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const [cats, setCats] = useState<{ id: number; name: string }[]>([]);
+  useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    fetch(`${base}/events/categories`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => Array.isArray(list) && setCats(list))
+      .catch(() => {});
+  }, []);
   return (
     <section className="bg-cream/60 py-14 sm:py-20">
       <div className="container">
@@ -305,18 +317,20 @@ function Categories() {
           Qu'est-ce qui te tente ?
         </h2>
         <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
-          {cats.map((c) => (
-            <Link
-              key={c.name}
-              href="/events"
-              className="group relative h-36 overflow-hidden rounded-3xl text-white shadow-md transition hover:-translate-y-1.5 hover:shadow-xl sm:h-44"
-            >
-              <img
-                src={c.img}
-                alt={c.name}
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110"
-              />
+          {cats.map((c) => {
+            const img = IMG_BY_CATEGORY[normalize(c.name)] || FALLBACK_IMG;
+            return (
+              <Link
+                key={c.id}
+                href={`/events?category=${encodeURIComponent(c.name)}`}
+                className="group relative h-36 overflow-hidden rounded-3xl text-white shadow-md transition hover:-translate-y-1.5 hover:shadow-xl sm:h-44"
+              >
+                <img
+                  src={img}
+                  alt={c.name}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                />
               <span className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
               <span className="absolute inset-x-0 bottom-0 block p-4 sm:p-5">
                 <span className="block text-sm font-black sm:text-base">{c.name}</span>
@@ -325,7 +339,8 @@ function Categories() {
                 </span>
               </span>
             </Link>
-          ))}
+            );
+          })}
         </div>
         <p className="mt-4 text-center text-[11px] font-medium text-slate-400">
           Photos : contributeurs Flickr, licences Creative Commons

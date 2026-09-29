@@ -130,7 +130,7 @@ export default async function EventDetailPage({
         )}
         <p className="mt-6 text-lg leading-8 text-slate-600">{event.description}</p>
         <div className="mt-6 space-y-1 text-sm font-bold text-slate-500">
-          <p>📍 {event.address}</p>
+          {event.address && <p>📍 {event.address}</p>}
           {event.doorsOpen && (
             <p>🚪 Ouverture des portes : {new Date(event.doorsOpen).toLocaleString('fr-FR')}</p>
           )}

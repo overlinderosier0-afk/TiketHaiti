@@ -1,5 +1,6 @@
-import { Module, Controller, Get, Patch, Body, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Module, Controller, Get, Patch, Body, Req, UseGuards, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
 
@@ -41,7 +42,16 @@ class UsersController {
     if (dto.email !== undefined) data.email = dto.email;
     if (dto.phone !== undefined) data.phone = dto.phone;
 
-    const user = await this.prisma.user.update({ where: { id: req.user.sub }, data });
+    let user;
+    try {
+      user = await this.prisma.user.update({ where: { id: req.user.sub }, data });
+    } catch (e: any) {
+      // Email déjà utilisé par un autre compte : 409 plutôt que 500.
+      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw new ConflictException('Cet email est déjà utilisé');
+      }
+      throw e;
+    }
     return {
       id: user.id,
       firstName: user.firstName,

@@ -2,6 +2,7 @@ import { Module, Controller, Get, Param, UseGuards, Req, Post, Body, BadRequestE
 import { Response } from 'express';
 import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
+import { AdminGuard } from '../auth/admin.guard';
 import { QrService } from './qr.service';
 import { PdfService } from './pdf.service';
 
@@ -57,7 +58,13 @@ class TicketsController {
     res.send(buffer);
   }
 
+  /**
+   * Check-in par QR (scan à l'entrée). Réservé au personnel : un QR est
+   * lisible par quiconque le photographie, donc cet endpoint exige un
+   * compte admin — sinon n'importe qui pourrait invalider le billet d'un autre.
+   */
   @Post('checkin')
+  @UseGuards(JwtGuard, AdminGuard)
   async checkin(@Body() body: { qrPayload: string; signature: string }) {
     if (!body.qrPayload || !body.signature) {
       throw new BadRequestException('QR requis');

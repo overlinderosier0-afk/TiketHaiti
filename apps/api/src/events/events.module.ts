@@ -46,6 +46,15 @@ class EventsController {
     return pageResult(items, total, { page: p, limit: l });
   }
 
+  /**
+   * Référentiel public des catégories (pour les filtres du catalogue).
+   * Déclaré AVANT ':id' : sinon GET /events/categories est capturé par le paramètre :id.
+   */
+  @Get('categories')
+  async categories() {
+    return this.prisma.category.findMany({ orderBy: { name: 'asc' } });
+  }
+
   @Get(':id')
   async detail(@Param('id') id: string) {
     const event = await this.prisma.event.findFirst({

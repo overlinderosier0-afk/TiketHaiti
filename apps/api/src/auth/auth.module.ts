@@ -2,7 +2,7 @@ import { Global, Module, CanActivate, ExecutionContext, Injectable, Unauthorized
 import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { JwtService } from '@nestjs/jwt';
-import { IsEmail, IsString, MinLength, Length } from 'class-validator';
+import { IsEmail, IsString, IsOptional, MinLength, Length } from 'class-validator';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
 import { AUTH_THROTTLE } from '../common/rate-limits';
@@ -12,7 +12,7 @@ export class RegisterDto {
   @IsString() lastName!: string;
   @IsEmail() email!: string;
   @IsString() @MinLength(6) password!: string;
-  @IsString() phone?: string;
+  @IsOptional() @IsString() phone?: string;
 }
 
 export class LoginDto {

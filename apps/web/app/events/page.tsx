@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { serverApiBase, publicUploadUrl } from '../../lib/server';
 import CityFilter from './CityFilter';
+import CategoryFilter from './CategoryFilter';
 import { CategoryPill, EmptyState, ErrorBox, PageHead, StatusPill } from '../../components/ui';
 
 export const metadata: Metadata = {
@@ -46,9 +47,10 @@ function formatDate(iso: string): string {
   });
 }
 
-async function getEvents(city: string, page: number): Promise<PageResult> {
+async function getEvents(city: string, category: string, page: number): Promise<PageResult> {
   const params = new URLSearchParams({ status: 'PUBLISHED', page: String(page), limit: '12' });
   if (city) params.set('city', city);
+  if (category) params.set('category', category);
   // L'API exclut déjà les événements terminés par défaut.
   const res = await fetch(`${serverApiBase()}/events?${params.toString()}`, {
     next: { revalidate: 60 }
@@ -57,9 +59,22 @@ async function getEvents(city: string, page: number): Promise<PageResult> {
   return (await res.json()) as PageResult;
 }
 
-function pageHref(city: string, page: number): string {
+async function getCategories(): Promise<{ id: number; name: string }[]> {
+  try {
+    const res = await fetch(`${serverApiBase()}/events/categories`, {
+      next: { revalidate: 600 }
+    });
+    if (!res.ok) return [];
+    return (await res.json()) as { id: number; name: string }[];
+  } catch {
+    return [];
+  }
+}
+
+function pageHref(city: string, category: string, page: number): string {
   const p = new URLSearchParams();
   if (city) p.set('city', city);
+  if (category) p.set('category', category);
   p.set('page', String(page));
   return `/events?${p.toString()}`;
 }
@@ -67,16 +82,18 @@ function pageHref(city: string, page: number): string {
 export default async function EventsPage({
   searchParams
 }: {
-  searchParams: Promise<{ city?: string; page?: string }>;
+  searchParams: Promise<{ city?: string; category?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const city = sp.city ?? '';
+  const category = sp.category ?? '';
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1);
 
   let data: PageResult | null = null;
+  let categories: { id: number; name: string }[] = [];
   let error = '';
   try {
-    data = await getEvents(city, page);
+    [data, categories] = await Promise.all([getEvents(city, category, page), getCategories()]);
   } catch (e: any) {
     error = e?.message || 'Chargement impossible';
   }
@@ -91,6 +108,12 @@ export default async function EventsPage({
         />
         <Suspense>
           <CityFilter initial={city} />
+        </Suspense>
+      </div>
+
+      <div className="mt-4">
+        <Suspense>
+          <CategoryFilter categories={categories} initial={category} />
         </Suspense>
       </div>
 
@@ -152,7 +175,7 @@ export default async function EventsPage({
       {data && data.totalPages > 1 && (
         <div className="mt-10 flex items-center justify-center gap-4">
           <Link
-            href={pageHref(city, page - 1)}
+            href={pageHref(city, category, page - 1)}
             aria-disabled={page <= 1}
             className={`rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 ${
               page <= 1 ? 'pointer-events-none opacity-40' : ''
@@ -164,7 +187,7 @@ export default async function EventsPage({
             Page {page} / {data.totalPages}
           </span>
           <Link
-            href={pageHref(city, page + 1)}
+            href={pageHref(city, category, page + 1)}
             aria-disabled={page >= data.totalPages}
             className={`rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 ${
               page >= data.totalPages ? 'pointer-events-none opacity-40' : ''
