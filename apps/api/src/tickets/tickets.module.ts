@@ -15,7 +15,7 @@ class TicketsController {
   async get(@Param('id') id: string, @Req() req: any) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
-      include: { event: { include: { city: true, category: true } }, order: true }
+      include: { event: { include: { city: true } }, order: true }
     });
 
     if (!ticket || ticket.userId !== req.user.sub) {

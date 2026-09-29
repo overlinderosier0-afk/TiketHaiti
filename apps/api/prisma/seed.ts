@@ -6,13 +6,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   const cities = ['Port-au-Prince', 'Cap-Haïtien', 'Jacmel', 'Les Cayes', 'Gonaïves'];
-  const categories = ['Concert', 'Festival', 'Culture', 'Sport', 'Conférence'];
 
   for (const name of cities) {
     await prisma.city.upsert({ where: { name }, update: {}, create: { name } });
-  }
-  for (const name of categories) {
-    await prisma.category.upsert({ where: { name }, update: {}, create: { name } });
   }
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@tikeayiti.ht';
@@ -32,8 +28,6 @@ async function main() {
 
   const pap = await prisma.city.findUniqueOrThrow({ where: { name: 'Port-au-Prince' } });
   const cap = await prisma.city.findUniqueOrThrow({ where: { name: 'Cap-Haïtien' } });
-  const concert = await prisma.category.findUniqueOrThrow({ where: { name: 'Concert' } });
-  const festival = await prisma.category.findUniqueOrThrow({ where: { name: 'Festival' } });
 
   const events = [
     {
@@ -41,7 +35,7 @@ async function main() {
       slug: 'konpa-night-live',
       description: 'Une nuit de konpa avec les meilleurs groupes du moment.',
       cityId: pap.id,
-      categoryId: concert.id,
+      category: 'Concert',
       address: 'Parc Historique de la Canne à Sucre',
       artistName: 'T-Vice & Carimi Revival',
       eventDate: new Date('2026-12-19T20:00:00-05:00'),
@@ -54,7 +48,7 @@ async function main() {
       slug: 'festival-mizik-lakay',
       description: 'Deux jours de musique, artisanat et gastronomie haïtienne.',
       cityId: cap.id,
-      categoryId: festival.id,
+      category: 'Festival',
       address: 'Boulevard du Cap-Haïtien',
       artistName: 'Artistes variés',
       eventDate: new Date('2027-01-16T10:00:00-05:00'),
@@ -72,7 +66,7 @@ async function main() {
     });
   }
 
-  console.log('Seed OK : villes, catégories, admin et 2 événements créés.');
+  console.log('Seed OK : villes, admin et 2 événements créés.');
 }
 
 main()

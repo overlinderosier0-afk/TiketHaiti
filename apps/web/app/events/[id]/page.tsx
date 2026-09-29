@@ -19,7 +19,7 @@ interface EventDetail {
   ticketsAvailable: number;
   status: string;
   city: { name: string };
-  category: { name: string };
+  category: string | null;
 }
 
 function formatDate(iso: string): string {
@@ -100,7 +100,7 @@ export default async function EventDetailPage({
             <img src={banner} alt={event.title} className="h-64 w-full object-cover md:h-96" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
-              <CategoryPill>{event.category?.name}</CategoryPill>
+              {event.category && <CategoryPill>{event.category}</CategoryPill>}
               <h1 className="mt-3 text-4xl font-black leading-tight text-white md:text-5xl">
                 {event.title}
               </h1>
@@ -111,7 +111,7 @@ export default async function EventDetailPage({
           </div>
         ) : (
           <>
-            <CategoryPill>{event.category?.name}</CategoryPill>
+            {event.category && <CategoryPill>{event.category}</CategoryPill>}
             <p className="mt-4 text-sm font-black uppercase tracking-[0.2em] text-campy">
               {formatDate(event.eventDate)} · {event.city?.name}
             </p>

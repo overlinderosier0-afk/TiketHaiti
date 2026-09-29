@@ -114,7 +114,7 @@ class OrdersController {
     await this.settlement.expireStaleOrders(req.user.sub);
     const orders = await this.prisma.order.findMany({
       where: { userId: req.user.sub },
-      include: { payments: true, tickets: true, event: { include: { city: true, category: true } } },
+      include: { payments: true, tickets: true, event: { include: { city: true } } },
       orderBy: { createdAt: 'desc' }
     });
     // Les commandes en attente embarquent leurs instructions de paiement
@@ -129,7 +129,7 @@ class OrdersController {
     await this.settlement.expireStaleOrders(req.user.sub);
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: { payments: true, tickets: true, event: { include: { city: true, category: true } } }
+      include: { payments: true, tickets: true, event: { include: { city: true } } }
     });
 
     if (!order || order.userId !== req.user.sub) {

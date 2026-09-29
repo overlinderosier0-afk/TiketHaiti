@@ -9,7 +9,7 @@ interface EventItem {
   title: string;
   slug: string;
   city: { name: string };
-  category: { name: string };
+  category: string | null;
   eventDate: string;
   price: number;
   bannerUrl: string | null;
@@ -21,6 +21,32 @@ interface PageResult {
 }
 
 /* ---------- Petits éléments décoratifs ---------- */
+
+/** Pastilles du hero : les catégories réellement utilisées (texte libre admin). */
+function HeroChips() {
+  const [cats, setCats] = useState<string[]>([]);
+  useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    fetch(`${base}/events/categories`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => Array.isArray(list) && setCats(list.slice(0, 4)))
+      .catch(() => {});
+  }, []);
+  if (cats.length === 0) return null;
+  return (
+    <div className="mt-8 flex flex-wrap gap-2">
+      {cats.map((c) => (
+        <Link
+          key={c}
+          href={`/events?category=${encodeURIComponent(c)}`}
+          className="rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-black text-slate-600 backdrop-blur transition hover:border-campy hover:text-campy"
+        >
+          {c}
+        </Link>
+      ))}
+    </div>
+  );
+}
 
 function Asterisk({ className = '' }: { className?: string }) {
   return (
@@ -142,17 +168,7 @@ function Hero() {
               Comment ça marche
             </a>
           </div>
-          <div className="mt-8 flex flex-wrap gap-2">
-            {['Concert', 'Festival', 'Culture', 'Sport'].map((c) => (
-              <Link
-                key={c}
-                href={`/events?category=${encodeURIComponent(c)}`}
-                className="rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-black text-slate-600 backdrop-blur transition hover:border-campy hover:text-campy"
-              >
-                {c}
-              </Link>
-            ))}
-          </div>
+          <HeroChips />
         </div>
         <PhoneMockup />
       </div>
@@ -263,9 +279,11 @@ function EventsShowcase() {
                   <img src={uploadUrl(event.bannerUrl)!} alt={event.title} className="h-full w-full object-cover transition group-hover:scale-105" />
                 </div>
               )}
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-campy">
-                {event.category?.name}
-              </span>
+              {event.category && (
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-campy">
+                  {event.category}
+                </span>
+              )}
               <p className="mt-3 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 sm:mt-4 sm:text-xs sm:tracking-[0.18em]">
                 {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · {event.city?.name}
               </p>
@@ -301,7 +319,7 @@ function Categories() {
   const FALLBACK_IMG = '/categories/soiree.jpg';
   const normalize = (s: string) =>
     s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const [cats, setCats] = useState<{ id: number; name: string }[]>([]);
+  const [cats, setCats] = useState<string[]>([]);
   useEffect(() => {
     const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     fetch(`${base}/events/categories`)
@@ -318,22 +336,22 @@ function Categories() {
         </h2>
         <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
           {cats.map((c) => {
-            const img = IMG_BY_CATEGORY[normalize(c.name)] || FALLBACK_IMG;
+            const img = IMG_BY_CATEGORY[normalize(c)] || FALLBACK_IMG;
             return (
               <Link
-                key={c.id}
-                href={`/events?category=${encodeURIComponent(c.name)}`}
+                key={c}
+                href={`/events?category=${encodeURIComponent(c)}`}
                 className="group relative h-36 overflow-hidden rounded-3xl text-white shadow-md transition hover:-translate-y-1.5 hover:shadow-xl sm:h-44"
               >
                 <img
                   src={img}
-                  alt={c.name}
+                  alt={c}
                   loading="lazy"
                   className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110"
                 />
               <span className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
               <span className="absolute inset-x-0 bottom-0 block p-4 sm:p-5">
-                <span className="block text-sm font-black sm:text-base">{c.name}</span>
+                <span className="block text-sm font-black sm:text-base">{c}</span>
                 <span className="mt-0.5 inline-block text-xs font-bold text-white/80 opacity-0 transition group-hover:opacity-100">
                   Explorer →
                 </span>

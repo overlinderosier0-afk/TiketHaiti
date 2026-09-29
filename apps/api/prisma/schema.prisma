@@ -60,13 +60,6 @@ model City {
   events Event[]
 }
 
-model Category {
-  id   Int    @id @default(autoincrement())
-  name String @unique
-
-  events Event[]
-}
-
 model Event {
   id               String      @id @default(uuid())
   title            String
@@ -75,7 +68,8 @@ model Event {
   bannerUrl        String?     @map("banner_url")
   gallery          Json?       @default("[]")
   cityId           Int         @map("city_id")
-  categoryId       Int         @map("category_id")
+  /** Catégorie en texte libre, écrite par l'admin (pas de liste imposée). */
+  category         String?
   address          String?
   latitude         Float?
   longitude        Float?
@@ -91,7 +85,6 @@ model Event {
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
   city     City     @relation(fields: [cityId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
   tickets  Ticket[]
   orders   Order[]
 

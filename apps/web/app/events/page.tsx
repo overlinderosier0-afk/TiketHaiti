@@ -23,7 +23,7 @@ interface EventItem {
   title: string;
   slug: string;
   city: { name: string };
-  category: { name: string };
+  category: string | null;
   eventDate: string;
   price: number;
   ticketsAvailable: number;
@@ -59,13 +59,13 @@ async function getEvents(city: string, category: string, page: number): Promise<
   return (await res.json()) as PageResult;
 }
 
-async function getCategories(): Promise<{ id: number; name: string }[]> {
+async function getCategories(): Promise<string[]> {
   try {
     const res = await fetch(`${serverApiBase()}/events/categories`, {
       next: { revalidate: 600 }
     });
     if (!res.ok) return [];
-    return (await res.json()) as { id: number; name: string }[];
+    return (await res.json()) as string[];
   } catch {
     return [];
   }
@@ -90,7 +90,7 @@ export default async function EventsPage({
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1);
 
   let data: PageResult | null = null;
-  let categories: { id: number; name: string }[] = [];
+  let categories: string[] = [];
   let error = '';
   try {
     [data, categories] = await Promise.all([getEvents(city, category, page), getCategories()]);
@@ -139,7 +139,7 @@ export default async function EventsPage({
                 />
               </div>
             )}
-            <CategoryPill>{ev.category?.name}</CategoryPill>
+            {ev.category && <CategoryPill>{ev.category}</CategoryPill>}
             <p className="mt-3 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 sm:mt-4 sm:text-xs sm:tracking-[0.18em]">
               {formatDate(ev.eventDate)} · {ev.city?.name}
             </p>

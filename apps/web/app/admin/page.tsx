@@ -50,11 +50,10 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', address: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '', isFree: false, isDraft: false });
+  const [form, setForm] = useState({ title: '', description: '', address: '', cityId: '', category: '', price: '', capacity: '', eventDate: '', isFree: false, isDraft: false });
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerKey, setBannerKey] = useState(0);
   const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [creating, setCreating] = useState(false);
   const [checkinCode, setCheckinCode] = useState('');
   const [checkinMsg, setCheckinMsg] = useState('');
@@ -80,7 +79,6 @@ export default function AdminPage() {
       .then(setEvents)
       .catch(() => {});
     api<{ id: number; name: string }[]>('/admin/cities').then(setCities).catch(() => {});
-    api<{ id: number; name: string }[]>('/admin/categories').then(setCategories).catch(() => {});
     loadPending();
   }, [loading, isAdmin, loadPending]);
 
@@ -105,7 +103,7 @@ export default function AdminPage() {
           description: form.description,
           slug: `${slugify(form.title)}-${Date.now().toString(36)}`,
           cityId: Number(form.cityId),
-          categoryId: Number(form.categoryId),
+          category: form.category.trim() || undefined,
           address: form.address.trim() || undefined,
           eventDate: form.eventDate,
           price: form.isFree ? 0 : Number(form.price),
@@ -116,7 +114,7 @@ export default function AdminPage() {
       if (bannerFile) {
         await uploadFile(`/admin/events/${created.id}/banner`, bannerFile);
       }
-      setForm({ title: '', description: '', address: '', cityId: '', categoryId: '', price: '', capacity: '', eventDate: '', isFree: false, isDraft: false });
+      setForm({ title: '', description: '', address: '', cityId: '', category: '', price: '', capacity: '', eventDate: '', isFree: false, isDraft: false });
       setBannerFile(null);
       setBannerKey((k) => k + 1);
       setError('');
@@ -304,13 +302,13 @@ export default function AdminPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="Catégorie">
-                <select className={inputCls} required value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
-                  <option value="">Choisir…</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+              <Field label="Catégorie (texte libre)">
+                <input
+                  className={inputCls}
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  placeholder="Ex : Konpa, Rap Kreyòl, Théâtre…"
+                />
               </Field>
             </div>
             <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-cream p-3">

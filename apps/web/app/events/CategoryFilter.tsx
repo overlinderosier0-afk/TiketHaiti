@@ -6,7 +6,7 @@ export default function CategoryFilter({
   categories,
   initial
 }: {
-  categories: { id: number; name: string }[];
+  categories: string[];
   initial: string;
 }) {
   const router = useRouter();
@@ -33,8 +33,8 @@ export default function CategoryFilter({
         Tous
       </button>
       {categories.map((c) => (
-        <button key={c.id} onClick={() => select(c.name)} className={pill(initial === c.name)}>
-          {c.name}
+        <button key={c} onClick={() => select(c)} className={pill(initial === c)}>
+          {c}
         </button>
       ))}
     </div>

@@ -28,7 +28,8 @@ class AdminEventDto {
   @IsString() slug!: string;
   @IsOptional() @IsString() bannerUrl?: string;
   @IsInt() cityId!: number;
-  @IsInt() categoryId!: number;
+  /** Catégorie en texte libre écrite par l'admin (aucune liste imposée). */
+  @IsOptional() @IsString() category?: string;
   @IsOptional() @IsString() address?: string;
   @IsOptional() @IsString() artistName?: string;
   @IsDateString() eventDate!: string;
@@ -50,7 +51,7 @@ class AdminController {
   @Get('events')
   async events() {
     return this.prisma.event.findMany({
-      include: { city: true, category: true },
+      include: { city: true },
       orderBy: { eventDate: 'asc' }
     });
   }
@@ -64,7 +65,7 @@ class AdminController {
         slug: dto.slug,
         bannerUrl: dto.bannerUrl ?? null,
         cityId: dto.cityId,
-        categoryId: dto.categoryId,
+        category: dto.category?.trim() || null,
         address: dto.address ?? null,
         artistName: dto.artistName ?? null,
         eventDate: new Date(dto.eventDate),
@@ -82,6 +83,7 @@ class AdminController {
     const data: any = { ...dto };
     if (dto.eventDate) data.eventDate = new Date(dto.eventDate);
     if (dto.doorsOpen) data.doorsOpen = new Date(dto.doorsOpen);
+    if (dto.category !== undefined) data.category = dto.category?.trim() || null;
     delete data.capacity; // la capacité se gère via ticketsAvailable, pas en édition directe
     return this.prisma.event.update({ where: { id }, data });
   }
@@ -273,15 +275,10 @@ class AdminController {
     return { message: `Entrée validée : ${ticket.event.title} — ${ticket.user.firstName} ${ticket.user.lastName}` };
   }
 
-  // Référentiels pour les formulaires admin.
+  // Référentiel pour le formulaire admin.
   @Get('cities')
   async cities() {
     return this.prisma.city.findMany({ orderBy: { name: 'asc' } });
-  }
-
-  @Get('categories')
-  async categories() {
-    return this.prisma.category.findMany({ orderBy: { name: 'asc' } });
   }
 }
 
