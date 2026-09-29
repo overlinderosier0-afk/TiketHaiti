@@ -287,15 +287,15 @@ function EventsShowcase() {
   );
 }
 
-/** Tuiles de catégories (liens vers le catalogue). */
+/** Tuiles de catégories avec vraies photos (liens vers le catalogue). */
 function Categories() {
   const cats = [
-    { icon: '🎵', name: 'Concerts', bg: 'from-violet-500 to-campy' },
-    { icon: '🎪', name: 'Festivals', bg: 'from-amber-400 to-orange-500' },
-    { icon: '🎉', name: 'Soirées', bg: 'from-pink-500 to-rose-500' },
-    { icon: '⚽', name: 'Sport', bg: 'from-emerald-400 to-teal-600' },
-    { icon: '🎭', name: 'Théâtre', bg: 'from-indigo-400 to-violet-600' },
-    { icon: '🎤', name: 'Conférences', bg: 'from-sky-400 to-campyDark' }
+    { name: 'Concerts', img: '/categories/concert.jpg' },
+    { name: 'Festivals', img: '/categories/festival.jpg' },
+    { name: 'Soirées', img: '/categories/soiree.jpg' },
+    { name: 'Sport', img: '/categories/sport.jpg' },
+    { name: 'Théâtre', img: '/categories/theatre.jpg' },
+    { name: 'Conférences', img: '/categories/conference.jpg' }
   ];
   return (
     <section className="bg-cream/60 py-14 sm:py-20">
@@ -309,16 +309,27 @@ function Categories() {
             <Link
               key={c.name}
               href="/events"
-              className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${c.bg} p-5 text-white shadow-md transition hover:-translate-y-1.5 hover:shadow-xl sm:p-6`}
+              className="group relative h-36 overflow-hidden rounded-3xl text-white shadow-md transition hover:-translate-y-1.5 hover:shadow-xl sm:h-44"
             >
-              <span className="text-3xl transition group-hover:scale-110 sm:text-4xl">{c.icon}</span>
-              <p className="mt-3 text-sm font-black sm:text-base">{c.name}</p>
-              <span className="mt-1 inline-block text-xs font-bold text-white/80 opacity-0 transition group-hover:opacity-100">
-                Explorer →
+              <img
+                src={c.img}
+                alt={c.name}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110"
+              />
+              <span className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
+              <span className="absolute inset-x-0 bottom-0 block p-4 sm:p-5">
+                <span className="block text-sm font-black sm:text-base">{c.name}</span>
+                <span className="mt-0.5 inline-block text-xs font-bold text-white/80 opacity-0 transition group-hover:opacity-100">
+                  Explorer →
+                </span>
               </span>
             </Link>
           ))}
         </div>
+        <p className="mt-4 text-center text-[11px] font-medium text-slate-400">
+          Photos : contributeurs Flickr, licences Creative Commons
+        </p>
       </div>
     </section>
   );
