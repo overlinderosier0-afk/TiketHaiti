@@ -28,6 +28,9 @@ WORKDIR /app
 RUN npm install -g prisma@6.19.3
 
 COPY --from=build /prod/api ./
+# `pnpm deploy` ignore les fichiers gitignorés (donc dist/) :
+# recopier explicitement la sortie de `nest build`.
+COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/apps/api/prisma ./prisma
 COPY --from=build /app/apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
 
