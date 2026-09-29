@@ -153,6 +153,17 @@ export default function AdminPage() {
     }
   }
 
+  async function removeEvent(id: string, title: string) {
+    if (!window.confirm(`Supprimer définitivement « ${title} » ? Cette action est irréversible.`)) return;
+    setError('');
+    try {
+      await api(`/admin/events/${id}`, { method: 'DELETE' });
+      api<AdminEvent[]>('/admin/events').then(setEvents).catch(() => {});
+    } catch (err: any) {
+      setError(err?.message || "Suppression de l'événement impossible");
+    }
+  }
+
   async function checkin(e: FormEvent) {    e.preventDefault();
     setCheckinBusy(true);
     setCheckinMsg('');
@@ -451,6 +462,12 @@ export default function AdminPage() {
                   Retirer
                 </button>
               )}
+              <button
+                onClick={() => removeEvent(ev.id, ev.title)}
+                className="rounded-full bg-red-50 px-4 py-2 text-sm font-black text-red-600 transition hover:bg-red-100"
+              >
+                🗑️ Supprimer
+              </button>
             </div>
           </div>
         ))}

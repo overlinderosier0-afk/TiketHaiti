@@ -85,9 +85,28 @@ class AdminController {
     return this.prisma.event.update({ where: { id }, data });
   }
 
+  /**
+   * Suppression d'un événement. Refusée s'il existe des commandes ou
+   * des billets liés (intégrité comptable) ; l'affiche locale est
+   * nettoyée du disque.
+   */
   @Delete('events/:id')
   async deleteEvent(@Param('id') id: string) {
-    return this.prisma.event.delete({ where: { id } });
+    const event = await this.prisma.event.findUnique({
+      where: { id },
+      include: { _count: { select: { orders: true, tickets: true } } }
+    });
+    if (!event) throw new NotFoundException('Événement introuvable');
+    if (event._count.orders > 0 || event._count.tickets > 0) {
+      throw new BadRequestException(
+        'Impossible de supprimer : des commandes ou des billets existent pour cet événement. Annule-le plutôt (statut CANCELLED).'
+      );
+    }
+    if (event.bannerUrl?.startsWith('/uploads/')) {
+      try { unlinkSync(join(uploadDir(), basename(event.bannerUrl))); } catch { /* déjà supprimé */ }
+    }
+    await this.prisma.event.delete({ where: { id } });
+    return { deleted: true };
   }
 
   /**

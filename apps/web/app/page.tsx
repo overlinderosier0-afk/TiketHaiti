@@ -65,7 +65,7 @@ function PhoneMockup() {
     <div className="relative mx-auto w-[280px] rotate-3 sm:w-[300px]">
       <Asterisk className="absolute -left-10 top-6 text-4xl" />
       <Dots className="absolute -right-12 bottom-10 h-24 w-24" />
-      <div className="rounded-[2.8rem] border-[10px] border-slate-900 bg-white shadow-2xl">
+      <div className="animate-float rounded-[2.8rem] border-[10px] border-slate-900 bg-white shadow-2xl">
         <div className="relative overflow-hidden rounded-[2rem] bg-cream px-4 pb-5 pt-8">
           <div className="absolute left-1/2 top-2 h-5 w-24 -translate-x-1/2 rounded-full bg-slate-900" />
           <p className="text-center text-sm font-black text-campy">Tikè Ayiti</p>
@@ -89,6 +89,15 @@ function PhoneMockup() {
           </div>
         </div>
       </div>
+      {/* Badges flottants */}
+      <div className="animate-float-slow absolute -right-6 top-16 rounded-2xl bg-white px-4 py-2.5 shadow-xl">
+        <p className="text-xs font-black text-emerald-600">✓ Paiement confirmé</p>
+        <p className="text-[11px] font-bold text-slate-500">via MonCash</p>
+      </div>
+      <div className="animate-float-slow absolute -left-8 bottom-20 rounded-2xl bg-white px-4 py-2.5 shadow-xl">
+        <p className="text-xs font-black text-slate-900">🎟️ QR scanné</p>
+        <p className="text-[11px] font-bold text-slate-500">Entrée validée</p>
+      </div>
     </div>
   );
 }
@@ -97,16 +106,19 @@ function PhoneMockup() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/90 via-cream/60 to-white">
+      {/* Halos décoratifs */}
+      <div aria-hidden className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-campy/15 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-amber-300/25 blur-3xl" />
       <Dots className="absolute left-8 top-24 hidden h-28 w-28 lg:block" />
-      <div className="container grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-24">
+      <div className="container relative grid items-center gap-12 py-14 sm:py-16 lg:grid-cols-2 lg:py-24">
         <div>
-          <p className="inline-block rounded-full bg-blue-50 px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-campy">
+          <p className="inline-block rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-campy shadow-sm">
             🎟️ La billetterie 100% haïtienne
           </p>
           <h1 className="mt-6 text-4xl font-black leading-[1.05] text-slate-900 sm:text-5xl md:text-6xl">
             Tes billets d'événements,{' '}
-            <span className="text-campy">sans faire la queue.</span>
+            <span className="bg-gradient-to-r from-campy to-campyDark bg-clip-text text-transparent">sans faire la queue.</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-8 text-slate-600">
             Concerts, festivals, soirées… Choisis ton événement, paie par transfert{' '}
@@ -130,10 +142,42 @@ function Hero() {
               Comment ça marche
             </a>
           </div>
+          <div className="mt-8 flex flex-wrap gap-2">
+            {['Concert', 'Festival', 'Soirée', 'Sport'].map((c) => (
+              <Link
+                key={c}
+                href="/events"
+                className="rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-black text-slate-600 backdrop-blur transition hover:border-campy hover:text-campy"
+              >
+                {c}
+              </Link>
+            ))}
+          </div>
         </div>
         <PhoneMockup />
       </div>
+      {/* Vague de transition */}
+      <svg aria-hidden viewBox="0 0 1440 60" preserveAspectRatio="none" className="relative block h-10 w-full text-campy">
+        <path d="M0,32 C240,60 480,0 720,24 C960,48 1200,8 1440,32 L1440,60 L0,60 Z" fill="currentColor" />
+      </svg>
     </section>
+  );
+}
+
+/** Bandeau défilant avec les villes (décoratif). */
+function Marquee() {
+  const cities = ['Port-au-Prince', 'Cap-Haïtien', 'Jacmel', 'Les Cayes', 'Gonaïves', 'Saint-Marc', 'Pétion-Ville', 'Jérémie'];
+  const row = [...cities, ...cities];
+  return (
+    <div className="overflow-hidden bg-campy py-4">
+      <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap">
+        {row.map((c, i) => (
+          <span key={i} className="flex items-center gap-8 text-sm font-black uppercase tracking-[0.25em] text-white">
+            {c} <span className="text-white/50">✳</span>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -145,12 +189,12 @@ function StatsBand() {
     ['0', "File d'attente"]
   ];
   return (
-    <section className="bg-campy">
-      <div className="container grid grid-cols-2 gap-6 py-10 md:grid-cols-4">
+    <section className="bg-white">
+      <div className="container grid grid-cols-2 gap-6 py-12 md:grid-cols-4">
         {stats.map(([value, label]) => (
-          <div key={label} className="text-center text-white">
-            <p className="text-4xl font-black md:text-5xl">{value}</p>
-            <p className="mt-1 text-sm font-bold text-white/80">{label}</p>
+          <div key={label} className="rounded-3xl bg-cream p-6 text-center transition hover:-translate-y-1 hover:shadow-lg">
+            <p className="bg-gradient-to-r from-campy to-campyDark bg-clip-text text-4xl font-black text-transparent md:text-5xl">{value}</p>
+            <p className="mt-1 text-sm font-bold text-slate-600">{label}</p>
           </div>
         ))}
       </div>
@@ -169,26 +213,26 @@ function EventsShowcase() {
   }, []);
 
   return (
-    <section className="container py-20">
-      <div className="flex items-end justify-between">
+    <section className="container py-14 sm:py-20">
+      <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.25em] text-campy">À l'affiche</p>
-          <h2 className="mt-3 text-4xl font-black text-slate-900 md:text-5xl">
+          <h2 className="mt-3 text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
             Les événements du moment
           </h2>
         </div>
-        <Link href="/events" className="hidden font-black text-campy sm:inline">
+        <Link href="/events" className="shrink-0 font-black text-campy">
           Tout voir →
         </Link>
       </div>
 
       {!data && !failed && (
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-6 md:grid-cols-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-[1.8rem] bg-white p-6 shadow">
-              <div className="h-5 w-24 rounded-full bg-blue-50" />
-              <div className="mt-5 h-4 w-40 rounded bg-slate-100" />
-              <div className="mt-3 h-7 w-3/4 rounded bg-slate-100" />
+            <div key={i} className="animate-pulse rounded-3xl bg-white p-3 shadow sm:rounded-[1.8rem] sm:p-6">
+              <div className="h-4 w-16 rounded-full bg-blue-50 sm:h-5 sm:w-24" />
+              <div className="mt-3 h-3 w-24 rounded bg-slate-100 sm:mt-5 sm:h-4 sm:w-40" />
+              <div className="mt-2 h-5 w-3/4 rounded bg-slate-100 sm:mt-3 sm:h-7" />
             </div>
           ))}
         </div>
@@ -208,30 +252,30 @@ function EventsShowcase() {
       )}
 
       {data && data.items.length > 0 && (
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-6 md:grid-cols-3">
           {data.items.map((event) => (
             <article
               key={event.id}
-              className="rounded-[1.8rem] border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1.5 hover:shadow-xl"
+              className="group rounded-3xl border border-slate-100 bg-white p-3 shadow-sm transition hover:-translate-y-1.5 hover:shadow-xl sm:rounded-[1.8rem] sm:p-6"
             >
               {uploadUrl(event.bannerUrl) && (
-                <div className="-mx-6 -mt-6 mb-6 h-44 overflow-hidden rounded-t-[1.8rem]">
-                  <img src={uploadUrl(event.bannerUrl)!} alt={event.title} className="h-full w-full object-cover" />
+                <div className="-m-3 mb-3 h-28 overflow-hidden rounded-t-3xl sm:-mx-6 sm:-mt-6 sm:mb-6 sm:h-44 sm:rounded-t-[1.8rem]">
+                  <img src={uploadUrl(event.bannerUrl)!} alt={event.title} className="h-full w-full object-cover transition group-hover:scale-105" />
                 </div>
               )}
               <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-campy">
                 {event.category?.name}
               </span>
-              <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="mt-3 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 sm:mt-4 sm:text-xs sm:tracking-[0.18em]">
                 {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · {event.city?.name}
               </p>
-              <h3 className="mt-2 text-2xl font-black text-slate-900">{event.title}</h3>
-              <p className="mt-3 text-sm font-bold text-slate-600">
+              <h3 className="mt-1 line-clamp-2 text-base font-black text-slate-900 sm:mt-2 sm:text-2xl">{event.title}</h3>
+              <p className="mt-2 text-xs font-bold text-slate-600 sm:mt-3 sm:text-sm">
                 {event.price > 0 ? `À partir de ${event.price.toLocaleString('fr-FR')} HTG` : 'Entrée gratuite'}
               </p>
               <Link
                 href={`/events/${event.slug || event.id}`}
-                className="mt-5 inline-flex rounded-full bg-slate-900 px-5 py-2.5 text-sm font-black text-white transition hover:bg-campy"
+                className="mt-3 hidden rounded-full bg-slate-900 px-5 py-2.5 text-sm font-black text-white transition hover:bg-campy sm:mt-5 sm:inline-flex"
               >
                 Prendre mes billets →
               </Link>
@@ -239,6 +283,43 @@ function EventsShowcase() {
           ))}
         </div>
       )}
+    </section>
+  );
+}
+
+/** Tuiles de catégories (liens vers le catalogue). */
+function Categories() {
+  const cats = [
+    { icon: '🎵', name: 'Concerts', bg: 'from-violet-500 to-campy' },
+    { icon: '🎪', name: 'Festivals', bg: 'from-amber-400 to-orange-500' },
+    { icon: '🎉', name: 'Soirées', bg: 'from-pink-500 to-rose-500' },
+    { icon: '⚽', name: 'Sport', bg: 'from-emerald-400 to-teal-600' },
+    { icon: '🎭', name: 'Théâtre', bg: 'from-indigo-400 to-violet-600' },
+    { icon: '🎤', name: 'Conférences', bg: 'from-sky-400 to-campyDark' }
+  ];
+  return (
+    <section className="bg-cream/60 py-14 sm:py-20">
+      <div className="container">
+        <p className="text-xs font-black uppercase tracking-[0.25em] text-campy">Parcourir</p>
+        <h2 className="mt-3 text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
+          Qu'est-ce qui te tente ?
+        </h2>
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
+          {cats.map((c) => (
+            <Link
+              key={c.name}
+              href="/events"
+              className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${c.bg} p-5 text-white shadow-md transition hover:-translate-y-1.5 hover:shadow-xl sm:p-6`}
+            >
+              <span className="text-3xl transition group-hover:scale-110 sm:text-4xl">{c.icon}</span>
+              <p className="mt-3 text-sm font-black sm:text-base">{c.name}</p>
+              <span className="mt-1 inline-block text-xs font-bold text-white/80 opacity-0 transition group-hover:opacity-100">
+                Explorer →
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
@@ -275,17 +356,17 @@ function Features() {
     }
   ];
   return (
-    <section className="bg-white py-20">
+    <section className="bg-white py-14 sm:py-20">
       <div className="container">
         <p className="text-center text-xs font-black uppercase tracking-[0.25em] text-campy">Nos atouts</p>
-        <h2 className="mx-auto mt-3 max-w-2xl text-center text-4xl font-black text-slate-900 md:text-5xl">
+        <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
           La façon la plus simple de sortir en Haïti.
         </h2>
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
           {features.map((f) => (
             <div
               key={f.title}
-              className="rounded-[1.8rem] border border-slate-100 bg-cream p-7 transition hover:-translate-y-1.5 hover:shadow-xl"
+              className="rounded-[1.8rem] border border-slate-100 bg-cream p-6 transition hover:-translate-y-1.5 hover:shadow-xl sm:p-7"
             >
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
                 {f.icon}
@@ -310,21 +391,67 @@ function HowItWorks() {
     { n: '3', title: 'Reçois ton billet QR', text: 'Paiement confirmé, billets émis : présente ton QR à l’entrée.' }
   ];
   return (
-    <section id="comment-ca-marche" className="container py-20">
+    <section id="comment-ca-marche" className="container py-14 sm:py-20">
       <p className="text-center text-xs font-black uppercase tracking-[0.25em] text-campy">Simple comme bonjou</p>
-      <h2 className="mx-auto mt-3 max-w-2xl text-center text-4xl font-black text-slate-900 md:text-5xl">
+      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
         Ton billet en 3 étapes
       </h2>
-      <div className="mt-12 grid gap-6 md:grid-cols-3">
+      <div className="relative mt-10 grid gap-4 sm:mt-12 sm:gap-6 md:grid-cols-3">
+        {/* Ligne de liaison (desktop) */}
+        <div aria-hidden className="absolute left-[16%] right-[16%] top-14 hidden border-t-2 border-dashed border-blue-200 md:block" />
         {steps.map((s) => (
-          <div key={s.n} className="relative rounded-[1.8rem] bg-white p-8 shadow-sm">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-campy text-xl font-black text-white">
+          <div key={s.n} className="relative rounded-[1.8rem] bg-white p-6 shadow-sm sm:p-8">
+            <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-campy text-xl font-black text-white ring-4 ring-white">
               {s.n}
             </span>
             <h3 className="mt-5 text-xl font-black text-slate-900">{s.title}</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">{s.text}</p>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+/** Appel aux organisateurs. */
+function OrganizerCta() {
+  return (
+    <section className="container pb-14 sm:pb-20">
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 px-6 py-12 sm:px-10 md:px-14 md:py-16">
+        <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-campy/30 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-amber-400/20 blur-3xl" />
+        <Asterisk className="absolute right-8 top-8 text-5xl !text-white/20" />
+        <div className="relative grid items-center gap-10 lg:grid-cols-2">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-amber-300">Organisateurs</p>
+            <h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">
+              Tu organises un événement ?
+            </h2>
+            <p className="mt-4 max-w-md leading-7 text-slate-300">
+              Vends tes billets en ligne sans site web : publie ton événement, reçois les
+              paiements MonCash & NatCash, et contrôle les entrées avec un simple scan QR.
+            </p>
+            <Link
+              href="/register"
+              className="mt-8 inline-block rounded-full bg-campy px-8 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-campyDark"
+            >
+              Créer mon compte
+            </Link>
+          </div>
+          <ul className="space-y-4">
+            {[
+              ['🚀', 'Mise en vente en quelques minutes'],
+              ['💰', 'Paiements MonCash & NatCash'],
+              ['📱', 'Contrôle des entrées par scan QR'],
+              ['📊', 'Suivi des ventes en temps réel']
+            ].map(([icon, text]) => (
+              <li key={text} className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 backdrop-blur">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-2xl">{icon}</span>
+                <span className="font-black text-white">{text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   );
@@ -355,12 +482,12 @@ function Faq() {
   ];
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="container py-20">
+    <section className="container py-14 sm:py-20">
       <p className="text-center text-xs font-black uppercase tracking-[0.25em] text-campy">FAQ</p>
-      <h2 className="mx-auto mt-3 max-w-2xl text-center text-4xl font-black text-slate-900 md:text-5xl">
+      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
         Une question ? On a la réponse.
       </h2>
-      <div className="mx-auto mt-10 max-w-3xl space-y-4">
+      <div className="mx-auto mt-8 max-w-3xl space-y-4 sm:mt-10">
         {items.map((item, i) => (
           <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <button
@@ -382,12 +509,13 @@ function Faq() {
 
 function CtaBanner() {
   return (
-    <section className="container pb-20">
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-campy px-8 py-14 md:px-14">
+    <section className="container pb-14 sm:pb-20">
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-campy to-campyDark px-6 py-12 sm:px-8 md:px-14 md:py-14">
         <Asterisk className="absolute right-10 top-8 text-5xl !text-white/40" />
         <Dots className="absolute bottom-8 left-10 h-20 w-20 opacity-40" />
+        <div aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="relative max-w-2xl">
-          <h2 className="text-4xl font-black text-white md:text-5xl">
+          <h2 className="text-3xl font-black text-white sm:text-4xl md:text-5xl">
             Prêt pour ta prochaine sortie ?
           </h2>
           <p className="mt-4 text-lg text-white/85">
@@ -408,11 +536,22 @@ function CtaBanner() {
 export default function Home() {
   return (
     <>
+      <style>{`
+        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes float { 0%,100% { transform: translateY(0) rotate(3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+        @keyframes floatSlow { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .animate-marquee { animation: marquee 30s linear infinite; }
+        .animate-float { animation: float 5s ease-in-out infinite; }
+        .animate-float-slow { animation: floatSlow 6s ease-in-out infinite; }
+      `}</style>
       <Hero />
-      <StatsBand />
+      <Marquee />
       <EventsShowcase />
+      <Categories />
+      <StatsBand />
       <Features />
       <HowItWorks />
+      <OrganizerCta />
       <Faq />
       <CtaBanner />
     </>
