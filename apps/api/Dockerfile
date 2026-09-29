@@ -18,7 +18,7 @@ RUN pnpm --filter @tike-ayiti/api exec prisma generate \
  && pnpm --filter @tike-ayiti/api run build \
  && pnpm --filter @tike-ayiti/api deploy /prod/api --prod \
  && cp -r /app/apps/api/prisma /prod/api/prisma \
- && (cd /prod/api && /app/node_modules/.bin/prisma generate --schema ./prisma/schema.prisma)
+ && (cd /prod/api && npx -y prisma@6.19.3 generate --schema ./prisma/schema.prisma)
 
 # ---------- runtime ----------
 FROM node:20-alpine AS runtime
