@@ -1,14 +1,13 @@
-'use client';
-
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { api, uploadUrl } from '../../../lib/api';
-import { useAuth } from '../../../lib/auth';
-import { CategoryPill, ErrorBox, PrimaryButton, StatusPill, inputCls } from '../../../components/ui';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { serverApiBase, publicUploadUrl } from '../../../lib/server';
+import BuyBox from './BuyBox';
+import { CategoryPill, StatusPill } from '../../../components/ui';
 
 interface EventDetail {
   id: string;
+  slug: string;
   title: string;
   description: string;
   address: string;
@@ -23,70 +22,90 @@ interface EventDetail {
   category: { name: string };
 }
 
-export default function EventDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { user } = useAuth();
-  const [event, setEvent] = useState<EventDetail | null>(null);
-  const [error, setError] = useState('');
-  const [qty, setQty] = useState(1);
-  const [busy, setBusy] = useState(false);
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
 
-  useEffect(() => {
-    if (!params.id) return;
-    api<EventDetail>(`/events/${params.id}`)
-      .then(setEvent)
-      .catch((e: any) => setError(e?.message || 'Événement introuvable'));
-  }, [params.id]);
+async function getEvent(id: string): Promise<EventDetail | null> {
+  const res = await fetch(`${serverApiBase()}/events/${encodeURIComponent(id)}`, {
+    next: { revalidate: 60 }
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Événement indisponible (${res.status})`);
+  return (await res.json()) as EventDetail;
+}
 
-  async function buy() {
-    if (!event) return;
-    if (!user) {
-      router.push(`/login?next=/events/${params.id}`);
-      return;
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const event = await getEvent(id).catch(() => null);
+
+  const title = event ? `${event.title} — Tikè Ayiti` : 'Événement — Tikè Ayiti';
+  const description = event
+    ? `${formatDate(event.eventDate)} · ${event.city?.name} · ${
+        event.price > 0 ? `${event.price.toLocaleString('fr-FR')} HTG` : 'Entrée gratuite'
+      }`
+    : 'Concerts, festivals et événements culturels : billets en MonCash ou NatCash.';
+  const image = event ? publicUploadUrl(event.bannerUrl) : null;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: image ? [{ url: image }] : []
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: image ? [image] : []
     }
-    setBusy(true);
-    setError('');
-    try {
-      const res = await api<{ orderId: string; free?: boolean }>('/orders', {
-        method: 'POST',
-        body: JSON.stringify({ eventId: event.id, quantity: qty })
-      });
-      // Événement gratuit : les billets sont déjà émis, direction mes billets.
-      router.push(res.free ? '/tickets' : `/checkout?order=${res.orderId}`);
-    } catch (e: any) {
-      setError(e?.message || 'Commande impossible');
-    } finally {
-      setBusy(false);
-    }
-  }
+  };
+}
 
-  if (error && !event) {
-    return (
-      <section className="container py-14">
-        <ErrorBox>{error}</ErrorBox>
-        <Link href="/events" className="mt-4 inline-block font-black text-campy">← Retour aux événements</Link>
-      </section>
-    );
-  }
-  if (!event) return <section className="container py-14 text-slate-400">Chargement…</section>;
+export default async function EventDetailPage({
+  params
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const event = await getEvent(id).catch(() => null);
+  if (!event) notFound();
+
+  const isPast = new Date(event.eventDate) < new Date();
+  const banner = publicUploadUrl(event.bannerUrl);
 
   return (
     <section className="container py-14">
-      <Link href="/events" className="text-sm font-black text-campy transition hover:text-campyDark">
+      <Link
+        href="/events"
+        className="text-sm font-black text-campy transition hover:text-campyDark"
+      >
         ← Tous les événements
       </Link>
 
       <div className="mt-6 max-w-3xl">
-        {uploadUrl(event.bannerUrl) ? (
+        {banner ? (
           <div className="relative overflow-hidden rounded-[1.8rem] shadow-sm">
-            <img src={uploadUrl(event.bannerUrl)!} alt={event.title} className="h-64 w-full object-cover md:h-96" />
+            <img src={banner} alt={event.title} className="h-64 w-full object-cover md:h-96" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
               <CategoryPill>{event.category?.name}</CategoryPill>
-              <h1 className="mt-3 text-4xl font-black leading-tight text-white md:text-5xl">{event.title}</h1>
+              <h1 className="mt-3 text-4xl font-black leading-tight text-white md:text-5xl">
+                {event.title}
+              </h1>
               <p className="mt-2 text-sm font-black uppercase tracking-[0.2em] text-white/85">
-                {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {event.city?.name}
+                {formatDate(event.eventDate)} · {event.city?.name}
               </p>
             </div>
           </div>
@@ -94,12 +113,21 @@ export default function EventDetailPage() {
           <>
             <CategoryPill>{event.category?.name}</CategoryPill>
             <p className="mt-4 text-sm font-black uppercase tracking-[0.2em] text-campy">
-              {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · {event.city?.name}
+              {formatDate(event.eventDate)} · {event.city?.name}
             </p>
-            <h1 className="mt-3 text-4xl font-black leading-tight text-slate-900 md:text-5xl">{event.title}</h1>
+            <h1 className="mt-3 text-4xl font-black leading-tight text-slate-900 md:text-5xl">
+              {event.title}
+            </h1>
           </>
         )}
-        {event.artistName && <p className="mt-3 text-xl font-bold text-slate-600">{event.artistName}</p>}
+        {event.artistName && (
+          <p className="mt-3 text-xl font-bold text-slate-600">{event.artistName}</p>
+        )}
+        {isPast && (
+          <div className="mt-6">
+            <StatusPill tone="red">Événement terminé</StatusPill>
+          </div>
+        )}
         <p className="mt-6 text-lg leading-8 text-slate-600">{event.description}</p>
         <div className="mt-6 space-y-1 text-sm font-bold text-slate-500">
           <p>📍 {event.address}</p>
@@ -109,34 +137,14 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      <div className="mt-10 rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm md:flex md:items-center md:justify-between">
-        <div>
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">{event.price > 0 ? 'Entrée générale' : 'Entrée gratuite'}</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{event.price > 0 ? `${event.price.toLocaleString('fr-FR')} HTG` : 'Gratuit'}</p>
-          <p className="mt-1 text-sm font-bold text-slate-500">Billet numérique · QR sécurisé</p>
-          <div className="mt-2">
-            {event.ticketsAvailable > 0 ? (
-              <StatusPill tone="green">{event.ticketsAvailable} billets restants</StatusPill>
-            ) : (
-              <StatusPill tone="red">Événement complet</StatusPill>
-            )}
-          </div>
-        </div>
-        <div className="mt-6 flex flex-wrap items-center gap-4 md:mt-0">
-          <label className="text-sm font-black text-slate-800">
-            Qté
-            <input
-              type="number" min={1} max={Math.min(10, event.ticketsAvailable)}
-              value={qty} onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-              className={`${inputCls} ml-2 !mt-0 w-20 text-center`}
-            />
-          </label>
-          <PrimaryButton onClick={buy} disabled={busy || event.ticketsAvailable <= 0} className="w-full sm:w-auto">
-            {busy ? '…' : event.price > 0 ? 'Prendre mes billets →' : 'Obtenir mes billets gratuits →'}
-          </PrimaryButton>
-        </div>
-      </div>
-      {error && <div className="mt-4 max-w-xl"><ErrorBox>{error}</ErrorBox></div>}
+      <BuyBox
+        eventId={event.id}
+        slug={event.slug || event.id}
+        price={event.price}
+        ticketsAvailable={event.ticketsAvailable}
+        disabled={isPast}
+        disabledReason={isPast ? 'Événement terminé' : undefined}
+      />
     </section>
   );
 }

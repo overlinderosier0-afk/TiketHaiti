@@ -55,6 +55,9 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      # Appels API côté serveur (rendu SSR) : passe par le réseau Docker
+      # interne au lieu de l'aller-retour public.
+      API_INTERNAL_URL: http://api:3001
     depends_on:
       - api
     restart: unless-stopped

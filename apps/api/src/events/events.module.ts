@@ -11,6 +11,7 @@ class EventsController {
     @Query('city') city?: string,
     @Query('category') category?: string,
     @Query('date') date?: string,
+    @Query('past') past?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
@@ -22,8 +23,12 @@ class EventsController {
     if (category) {
       filters.category = { name: { contains: category, mode: 'insensitive' } };
     }
-    if (date) {
-      filters.eventDate = { gte: new Date(date) };
+    // Par défaut, seuls les événements à venir sont listés — les événements
+    // terminés ne sont plus proposés à la vente. ?past=true pour les inclure.
+    if (past === 'true') {
+      if (date) filters.eventDate = { gte: new Date(date) };
+    } else {
+      filters.eventDate = { gte: date ? new Date(date) : new Date() };
     }
 
     const { page: p, limit: l } = parsePage({ page, limit });

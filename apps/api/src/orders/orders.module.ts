@@ -24,6 +24,9 @@ class OrdersController {
       const event = await tx.event.findUnique({ where: { id: dto.eventId } });
       if (!event) throw new NotFoundException('Événement introuvable');
       if (event.status !== 'PUBLISHED') throw new BadRequestException('Événement non disponible à la vente');
+      if (new Date(event.eventDate) < new Date()) {
+        throw new BadRequestException('Cet événement est déjà terminé');
+      }
       if (event.ticketsAvailable < dto.quantity) {
         throw new BadRequestException(`Plus que ${event.ticketsAvailable} place(s) disponible(s)`);
       }
