@@ -54,7 +54,12 @@ export default function TicketsPage() {
 
   return (
     <section className="container py-14">
-      <PageHead eyebrow="Billets" title="Mes billets" sub="Présente ton QR à l'entrée, c'est tout." />
+      <Link href="/events" className="inline-flex items-center gap-1 text-sm font-black text-campy transition hover:underline">
+        ← Retour aux événements
+      </Link>
+      <div className="mt-4">
+        <PageHead eyebrow="Billets" title="Mes billets" sub="Présente ton QR à l'entrée, c'est tout." />
+      </div>
 
       {error && <div className="mt-6"><ErrorBox>{error}</ErrorBox></div>}
 

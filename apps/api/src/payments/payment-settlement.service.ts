@@ -197,6 +197,28 @@ export class PaymentSettlementService {
   }
 
   /**
+   * Annule une commande GRATUITE déjà soldée (billets émis) : les billets
+   * sont supprimés (le check-in les rejettera comme « Billet inconnu »),
+   * la commande passe en CANCELLED et les places sont libérées.
+   * Refusé pour toute commande payante (remboursement = support manuel).
+   */
+  async cancelFreeOrder(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order || order.paymentStatus !== 'PAID' || order.total > 0) {
+      return { cancelled: false as const };
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.ticket.deleteMany({ where: { orderId } });
+      await tx.order.update({ where: { id: orderId }, data: { paymentStatus: 'CANCELLED' } });
+      await tx.event.update({
+        where: { id: order.eventId },
+        data: { ticketsAvailable: { increment: order.quantity } }
+      });
+    });
+    return { cancelled: true as const };
+  }
+
+  /**
    * Annule les commandes PENDING dont le délai de paiement est dépassé.
    * Appelée paresseusement (aucun cron requis) : au chargement des
    * commandes d'un utilisateur, au polling du statut, et via l'admin.

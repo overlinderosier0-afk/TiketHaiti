@@ -39,3 +39,53 @@ describe('PaymentSettlementService (paiement manuel)', () => {
     expect(svc.merchantNumber('NATCASH')).toBe('+50922222222');
   });
 });
+
+describe('PaymentSettlementService — cancelFreeOrder', () => {
+  function makeSvc(order: any) {
+    const tx = {
+      ticket: { deleteMany: jest.fn(async () => ({})) },
+      order: { update: jest.fn(async () => ({})) },
+      event: { update: jest.fn(async () => ({})) }
+    };
+    const prisma: any = {
+      order: { findUnique: jest.fn(async () => order) },
+      $transaction: jest.fn(async (cb: any) => cb(tx))
+    };
+    const svc = new PaymentSettlementService(prisma, {} as any, {} as any);
+    return { svc, prisma, tx };
+  }
+
+  it('annule une commande gratuite soldée : billets supprimés, places libérées', async () => {
+    const { svc, prisma, tx } = makeSvc({
+      id: 'o1', eventId: 'e1', quantity: 2, paymentStatus: 'PAID', total: 0
+    });
+
+    const res = await svc.cancelFreeOrder('o1');
+    expect(res).toEqual({ cancelled: true });
+    expect(tx.ticket.deleteMany).toHaveBeenCalledWith({ where: { orderId: 'o1' } });
+    expect(tx.order.update).toHaveBeenCalledWith({
+      where: { id: 'o1' }, data: { paymentStatus: 'CANCELLED' }
+    });
+    expect(tx.event.update).toHaveBeenCalledWith({
+      where: { id: 'e1' }, data: { ticketsAvailable: { increment: 2 } }
+    });
+  });
+
+  it('refuse une commande en attente (pas encore soldée)', async () => {
+    const { svc, prisma } = makeSvc({ id: 'o1', paymentStatus: 'PENDING', total: 0 });
+    expect(await svc.cancelFreeOrder('o1')).toEqual({ cancelled: false });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('refuse une commande payante (remboursement = support manuel)', async () => {
+    const { svc, prisma } = makeSvc({ id: 'o1', paymentStatus: 'PAID', total: 500 });
+    expect(await svc.cancelFreeOrder('o1')).toEqual({ cancelled: false });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('refuse une commande inexistante', async () => {
+    const { svc, prisma } = makeSvc(null);
+    expect(await svc.cancelFreeOrder('nope')).toEqual({ cancelled: false });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});

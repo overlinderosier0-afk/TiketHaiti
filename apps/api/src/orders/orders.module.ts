@@ -13,7 +13,7 @@ class CreateOrderDto {
 }
 
 @Controller('orders')
-class OrdersController {
+export class OrdersController {
   constructor(
     private prisma: PrismaService,
     private settlement: PaymentSettlementService,
@@ -48,6 +48,27 @@ class OrdersController {
       // Événement gratuit (prix 0) : pas de paiement, commande soldée et
       // billets émis immédiatement — aucun passage par le checkout.
       if (event.price <= 0) {
+        // Anti-abus : plafond de billets gratuits par utilisateur et par
+        // événement, cumulé sur toutes ses commandes non annulées.
+        const maxFree = this.freeTicketsPerUser();
+        const existing = await tx.order.aggregate({
+          where: {
+            userId: req.user.sub,
+            eventId: dto.eventId,
+            total: 0,
+            paymentStatus: { not: 'CANCELLED' }
+          },
+          _sum: { quantity: true }
+        });
+        const already = existing._sum.quantity ?? 0;
+        if (already + dto.quantity > maxFree) {
+          throw new BadRequestException(
+            `Limite de ${maxFree} billet(s) gratuit(s) par personne pour cet événement` +
+              (already > 0 ? ` (tu en as déjà ${already})` : '') +
+              '.'
+          );
+        }
+
         const order = await tx.order.create({
           data: {
             userId: req.user.sub,
@@ -148,6 +169,41 @@ class OrdersController {
     }
 
     return { ...order, manualPayment: this.manualPaymentInfo(order) };
+  }
+
+  /**
+   * Annulation par le client lui-même : commande en attente (places
+   * libérées) ou commande gratuite déjà émise (billets supprimés,
+   * places libérées). Une commande payée ne peut pas être annulée ici
+   * (remboursement manuel via le support).
+   */
+  @Post(':id/cancel')
+  @UseGuards(JwtGuard)
+  async cancel(@Param('id') id: string, @Req() req: any) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order || order.userId !== req.user.sub) {
+      throw new UnauthorizedException('Commande inaccessible');
+    }
+    if (order.paymentStatus === 'PENDING') {
+      return { orderId: id, ...(await this.settlement.cancelOrder(id)) };
+    }
+    if (order.paymentStatus === 'PAID' && order.total <= 0) {
+      return { orderId: id, ...(await this.settlement.cancelFreeOrder(id)) };
+    }
+    throw new BadRequestException(
+      order.paymentStatus === 'PAID'
+        ? 'Commande payée : contacte le support pour une annulation.'
+        : 'Cette commande ne peut plus être annulée.'
+    );
+  }
+
+  /**
+   * Plafond de billets gratuits par utilisateur et par événement
+   * (anti-abus). Configurable via FREE_TICKETS_PER_USER, défaut 4.
+   */
+  private freeTicketsPerUser(): number {
+    const n = parseInt(process.env.FREE_TICKETS_PER_USER || '4', 10);
+    return Number.isFinite(n) && n > 0 ? n : 4;
   }
 
   /**

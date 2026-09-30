@@ -73,13 +73,23 @@ function CheckoutForm() {
   const [manual, setManual] = useState<ManualPayment | null>(null);
   const [copied, setCopied] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Une fois la redirection vers /tickets déclenchée, on ne doit plus
+  // rien faire : sinon le bouton « retour » du navigateur retombe sur
+  // cette page qui repousse aussitôt vers /tickets (boucle).
+  const redirectedRef = useRef(false);
 
   const load = useCallback(() => {
-    if (!orderId) return;
+    if (!orderId || redirectedRef.current) return;
     api<OrderDetail>(`/orders/${orderId}`)
       .then((o) => {
         setOrder(o);
-        if (o.paymentStatus === 'PAID') router.push('/tickets');
+        if (o.paymentStatus === 'PAID' && !redirectedRef.current) {
+          redirectedRef.current = true;
+          if (pollRef.current) clearInterval(pollRef.current);
+          // replace (pas push) : le checkout ne reste pas dans l'historique,
+          // le bouton « retour » ramène à la page précédente.
+          router.replace('/tickets');
+        }
       })
       .catch((e: any) => setError(e?.message || 'Commande introuvable'));
   }, [orderId, router]);

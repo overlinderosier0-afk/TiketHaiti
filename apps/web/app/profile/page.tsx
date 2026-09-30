@@ -182,16 +182,41 @@ export default function ProfilePage() {
       )}
       <div className="mt-4 space-y-3">
         {orders.map((o) => (
-          <OrderCard key={o.id} order={o} />
+          <OrderCard
+            key={o.id}
+            order={o}
+            onCancelled={(id) =>
+              setOrders((prev) =>
+                prev.map((p) => (p.id === id ? { ...p, paymentStatus: 'CANCELLED' } : p))
+              )
+            }
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function OrderCard({ order: o }: { order: OrderItem }) {
+function OrderCard({ order: o, onCancelled }: { order: OrderItem; onCancelled: (id: string) => void }) {
   const [copied, setCopied] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const pending = o.paymentStatus === 'PENDING' && o.manualPayment;
+  // Annulable : commande en attente, ou commande gratuite déjà émise.
+  // (Une commande payée validée passe par le support : remboursement.)
+  const canCancel = o.paymentStatus === 'PENDING' || (o.paymentStatus === 'PAID' && o.total <= 0);
+
+  async function cancelOrder() {
+    if (!window.confirm('Annuler cette commande ? Les places seront libérées et les billets supprimés.')) return;
+    setCancelling(true);
+    try {
+      await api(`/orders/${o.id}/cancel`, { method: 'POST' });
+      onCancelled(o.id);
+    } catch (e: any) {
+      window.alert(e?.message || 'Annulation impossible');
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
@@ -241,6 +266,18 @@ function OrderCard({ order: o }: { order: OrderItem }) {
               ⏳ À régler avant le {new Date(o.manualPayment.expiresAt).toLocaleString('fr-FR')}, sinon la commande est annulée.
             </p>
           )}
+        </div>
+      )}
+
+      {canCancel && (
+        <div className="mt-4 border-t border-slate-100 pt-3">
+          <button
+            onClick={cancelOrder}
+            disabled={cancelling}
+            className="text-sm font-black text-red-600 transition hover:underline disabled:opacity-50"
+          >
+            {cancelling ? 'Annulation…' : 'Annuler cette commande'}
+          </button>
         </div>
       )}
     </div>
