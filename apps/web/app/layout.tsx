@@ -3,10 +3,31 @@ import Link from 'next/link';
 import AdminAwareNav from '../components/AdminAwareNav';
 import { AuthProvider } from '../lib/auth';
 
+const SITE_URL = 'https://tikeayiti.com';
+const SITE_DESC =
+  'Achte tikè pou pi bèl evènman Ayiti yo. Peye ak MonCash oswa NatCash, jwenn tikè QR ou nan kont ou.';
+
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'Tikè Ayiti — Tikè ou, nan poch ou',
-  description:
-    'Achte tikè pou pi bèl evènman Ayiti yo. Peye ak MonCash oswa NatCash, jwenn tikè QR ou nan kont ou.'
+  description: SITE_DESC,
+  openGraph: {
+    type: 'website',
+    url: SITE_URL,
+    siteName: 'Tikè Ayiti',
+    title: 'Tikè Ayiti — Tikè ou, nan poch ou',
+    description: SITE_DESC,
+    locale: 'fr_HT'
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tikè Ayiti — Tikè ou, nan poch ou',
+    description: SITE_DESC
+  },
+  robots: {
+    index: true,
+    follow: true
+  }
 };
 
 function LogoMark() {
