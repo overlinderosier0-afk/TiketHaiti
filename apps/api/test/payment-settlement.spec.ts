@@ -2,7 +2,8 @@ import { PaymentSettlementService } from '../src/payments/payment-settlement.ser
 
 describe('PaymentSettlementService (paiement manuel)', () => {
   const prisma = { order: { findUnique: jest.fn().mockResolvedValue(null) } };
-  const svc = new PaymentSettlementService(prisma as any, {} as any);
+  const notifications = { notifyCustomerTicketsReady: jest.fn() };
+  const svc = new PaymentSettlementService(prisma as any, {} as any, notifications as any);
 
   afterEach(() => {
     delete process.env.PAYMENT_EXPIRY_HOURS;

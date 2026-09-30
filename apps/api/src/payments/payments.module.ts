@@ -99,7 +99,7 @@ class PaymentsController {
     // Prévient l'admin qu'un paiement attend sa validation (email si
     // configuré, sinon simple log). "Fire and forget" : la notification
     // ne retarde ni ne casse jamais la réponse au client.
-    void this.notifyAdminOfPendingPayment(order, provider, userId).catch(() => {});
+    void this.notifyAdminOfPendingPayment(order, provider, userId, merchantNumber).catch(() => {});
 
     return {
       provider,
@@ -122,10 +122,11 @@ class PaymentsController {
   }
 
   /**
-   * Rassemble le contexte (événement, client) et prévient l'admin.
+   * Rassemble le contexte (événement, client) et prévient l'admin,
+   * puis envoie au client ses instructions de paiement.
    * Le NotificationService garantit qu'aucune exception ne remonte.
    */
-  private async notifyAdminOfPendingPayment(order: any, provider: Provider, userId: string): Promise<void> {
+  private async notifyAdminOfPendingPayment(order: any, provider: Provider, userId: string, merchantNumber: string): Promise<void> {
     const [event, user] = await Promise.all([
       this.prisma.event.findUnique({ where: { id: order.eventId }, select: { title: true } }),
       this.prisma.user.findUnique({
@@ -133,16 +134,30 @@ class PaymentsController {
         select: { firstName: true, lastName: true, email: true, phone: true }
       })
     ]);
+    const customerName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || userId;
     await this.notifications.notifyAdminPendingPayment({
       provider,
       orderId: order.id,
       reference: order.paymentReference ?? null,
       amount: order.total,
       eventTitle: event?.title ?? 'Événement inconnu',
-      customerName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || userId,
+      customerName,
       customerContact: user?.phone || user?.email || '',
       expiresAt: order.expiresAt ?? null
     });
+    // Email client : instructions de paiement (même dégradation propre).
+    if (user?.email) {
+      await this.notifications.notifyCustomerPaymentInstructions(user.email, {
+        provider,
+        providerLabel: provider === 'MONCASH' ? 'MonCash' : 'NatCash',
+        merchantNumber,
+        reference: order.paymentReference ?? null,
+        amount: order.total,
+        eventTitle: event?.title ?? 'Événement inconnu',
+        customerName,
+        expiresAt: order.expiresAt ?? null
+      });
+    }
   }
 
   @Post('webhook/moncash')

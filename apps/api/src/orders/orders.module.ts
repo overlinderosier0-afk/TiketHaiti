@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma.service';
 import { JwtGuard } from '../auth/auth.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PaymentSettlementService } from '../payments/payment-settlement.service';
+import { NotificationsModule, NotificationService } from '../notifications/notifications.module';
 
 class CreateOrderDto {
   @IsString() eventId!: string;
@@ -13,7 +14,11 @@ class CreateOrderDto {
 
 @Controller('orders')
 class OrdersController {
-  constructor(private prisma: PrismaService, private settlement: PaymentSettlementService) {}
+  constructor(
+    private prisma: PrismaService,
+    private settlement: PaymentSettlementService,
+    private notifications: NotificationService
+  ) {}
 
   @Post()
   @UseGuards(JwtGuard)
@@ -95,6 +100,12 @@ class OrdersController {
       return { order, free: false as const };
     });
 
+    // Événement gratuit : billets déjà émis — on prévient le client.
+    // "Fire and forget" : l'email ne retarde ni ne casse jamais la réponse.
+    if (result.free) {
+      void this.notifyFreeTicketsReady(result.order).catch(() => {});
+    }
+
     return {
       order: result.order,
       checkoutUrl: result.free ? null : (dto.paymentMethod ? `/payments/${dto.paymentMethod.toLowerCase()}/initiate` : null),
@@ -140,6 +151,27 @@ class OrdersController {
   }
 
   /**
+   * Email « billets prêts » pour une commande gratuite (billets émis
+   * immédiatement à la création). Le NotificationService garantit
+   * qu'aucune exception ne remonte.
+   */
+  private async notifyFreeTicketsReady(order: any): Promise<void> {
+    const [event, user] = await Promise.all([
+      this.prisma.event.findUnique({ where: { id: order.eventId }, select: { title: true } }),
+      this.prisma.user.findUnique({
+        where: { id: order.userId },
+        select: { firstName: true, lastName: true, email: true }
+      })
+    ]);
+    if (!user?.email) return;
+    await this.notifications.notifyCustomerTicketsReady(user.email, {
+      eventTitle: event?.title ?? 'Événement',
+      quantity: order.quantity,
+      customerName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
+    });
+  }
+
+  /**
    * Instructions de paiement manuel pour une commande en attente :
    * null si la commande n'est plus en attente ou sans méthode choisie.
    * Lecture seule — aucune logique métier modifiée.
@@ -165,7 +197,7 @@ class OrdersController {
 }
 
 @Module({
-  imports: [PaymentsModule],
+  imports: [PaymentsModule, NotificationsModule],
   controllers: [OrdersController],
   providers: [PrismaService]
 })

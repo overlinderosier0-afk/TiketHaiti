@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma.service';
 import { QrService } from '../tickets/qr.service';
+import { NotificationService } from '../notifications/notifications.module';
 
 export type Provider = 'MONCASH' | 'NATCASH';
 
@@ -24,7 +25,11 @@ export interface SettleOptions {
  */
 @Injectable()
 export class PaymentSettlementService {
-  constructor(private prisma: PrismaService, private qr: QrService) {}
+  constructor(
+    private prisma: PrismaService,
+    private qr: QrService,
+    private notifications: NotificationService
+  ) {}
 
   /**
    * Référence courte que le client recopie dans la note de son transfert
@@ -137,8 +142,7 @@ export class PaymentSettlementService {
       if (opts.succeeded) {
         // Émission des billets avec QR signé HMAC.
         await this.issueTickets(tx, order);
-      } else {
-        // Échec : on libère les places réservées.
+      } else {        // Échec : on libère les places réservées.
         await tx.event.update({
           where: { id: order.eventId },
           data: { ticketsAvailable: { increment: order.quantity } }
@@ -146,7 +150,34 @@ export class PaymentSettlementService {
       }
     });
 
+    // Paiement confirmé : prévient le client que ses billets sont prêts.
+    // "Fire and forget" : l'email ne retarde ni ne casse jamais la réponse.
+    if (opts.succeeded) {
+      void this.notifyCustomerTicketsReady(order).catch(() => {});
+    }
+
     return { settled: true as const, status: (opts.succeeded ? 'paid' : 'failed') as 'paid' | 'failed' };
+  }
+
+  /**
+   * Rassemble le contexte (événement, client) et envoie l'email
+   * « billets prêts ». Le NotificationService garantit qu'aucune
+   * exception ne remonte.
+   */
+  private async notifyCustomerTicketsReady(order: any): Promise<void> {
+    const [event, user] = await Promise.all([
+      this.prisma.event.findUnique({ where: { id: order.eventId }, select: { title: true } }),
+      this.prisma.user.findUnique({
+        where: { id: order.userId },
+        select: { firstName: true, lastName: true, email: true }
+      })
+    ]);
+    if (!user?.email) return;
+    await this.notifications.notifyCustomerTicketsReady(user.email, {
+      eventTitle: event?.title ?? 'Événement',
+      quantity: order.quantity,
+      customerName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
+    });
   }
 
   /** Annule une commande PENDING et libère les places réservées. */
