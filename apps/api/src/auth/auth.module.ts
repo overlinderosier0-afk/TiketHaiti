@@ -6,6 +6,7 @@ import { IsEmail, IsString, IsOptional, MinLength, Length } from 'class-validato
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
 import { AUTH_THROTTLE } from '../common/rate-limits';
+import { NotificationsModule, NotificationService } from '../notifications/notifications.module';
 
 export class RegisterDto {
   @IsString() firstName!: string;
@@ -42,7 +43,15 @@ export class JwtGuard implements CanActivate {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private prisma: PrismaService, private jwt: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private notifications: NotificationService
+  ) {}
+
+  private displayName(user: any): string {
+    return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+  }
 
   // Anti brute-force : 10 req/min par IP (configurable via
   // AUTH_RATE_LIMIT_*). Le throttling global reste à 100 req/min.
@@ -66,6 +75,12 @@ export class AuthController {
       }
     });
 
+    // Email de bienvenue — "fire and forget" : ne retarde ni ne casse
+    // jamais l'inscription.
+    void this.notifications
+      .notifyWelcome(user.email, { customerName: this.displayName(user) })
+      .catch(() => {});
+
     return this.token(user);
   }
 
@@ -76,6 +91,11 @@ export class AuthController {
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Identifiants invalides');
     }
+
+    // Alerte de sécurité à chaque connexion — "fire and forget".
+    void this.notifications
+      .notifyNewLogin(user.email, { customerName: this.displayName(user), at: new Date() })
+      .catch(() => {});
 
     return this.token(user);
   }
@@ -118,6 +138,7 @@ export class AuthController {
 
 @Global()
 @Module({
+  imports: [NotificationsModule],
   // JwtModule est enregistré en global dans AppModule avec la vraie config ;
   // on ne l'importe plus ici (l'import vide précédent cassait jwt.sign()).
   controllers: [AuthController],
