@@ -6,7 +6,7 @@ import { AuthProvider } from '../lib/auth';
 export const metadata = {
   title: 'Tikè Ayiti — Tikè ou, nan poch ou',
   description:
-    'Achte tikè pou pi bèl evènman Ayiti yo. Peye ak MonCash oswa NatCash, resevwa QR ou sou WhatsApp.'
+    'Achte tikè pou pi bèl evènman Ayiti yo. Peye ak MonCash oswa NatCash, jwenn tikè QR ou nan kont ou.'
 };
 
 function LogoMark() {

@@ -128,7 +128,7 @@ function HeroTickets() {
         </div>
       )}
       <span className="float-badge fb-1">⚡ MonCash & NatCash</span>
-      <span className="float-badge fb-2">✓ Tikè voye sou WhatsApp</span>
+      <span className="float-badge fb-2">✓ Tikè QR ou nan kont ou</span>
     </div>
   );
 }
@@ -151,7 +151,7 @@ function Hero() {
           </h1>
           <p className="mt-5 max-w-[480px] text-[1.12rem] leading-[1.65] text-tike-muted">
             Achte tikè pou pi bèl evènman Ayiti yo. Peye ak <b className="text-tike-ink">MonCash</b> oswa{' '}
-            <b className="text-tike-ink">NatCash</b>, resevwa QR ou sou <b className="text-tike-ink">WhatsApp</b> — antre
+            <b className="text-tike-ink">NatCash</b>, jwenn tikè QR ou nan <b className="text-tike-ink">kont ou</b> — antre
             san traka.
           </p>
           <div className="mt-7">
@@ -316,7 +316,7 @@ function How() {
     {
       n: '3',
       title: 'Antre ak QR ou',
-      text: <>Resevwa tikè ou sou <b className="text-tike-ink">WhatsApp</b> imedyatman. Montre QR la nan pòt la.</>
+      text: <>Jwenn tikè QR ou nan <b className="text-tike-ink">kont ou</b> apre peman an konfime. Montre QR la nan pòt la.</>
     }
   ];
   return (
