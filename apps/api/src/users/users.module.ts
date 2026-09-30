@@ -67,7 +67,10 @@ class UsersController {
   async tickets(@Req() req: any) {
     return this.prisma.ticket.findMany({
       where: { userId: req.user.sub },
-      include: { event: true, order: true },
+      include: {
+        event: { include: { city: true } },
+        order: { select: { id: true, paymentStatus: true, total: true } }
+      },
       orderBy: { createdAt: 'desc' }
     });
   }
