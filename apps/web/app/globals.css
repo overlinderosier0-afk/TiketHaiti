@@ -10,8 +10,8 @@
 }
 
 body {
-  color: #221d33;
-  background: #fbfafe;
+  color: #0f172a;
+  background: #f8f9fd;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -53,13 +53,13 @@ body {
 /* ================= Thème v2 "sunset" (page d'accueil) ================= */
 
 .tike-grad-text {
-  background: linear-gradient(120deg, #7c3aed 0%, #d946ef 48%, #f59e0b 100%);
+  background: linear-gradient(120deg, #2f5bff 0%, #1e3fae 48%, #f4b942 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .tike-grad-bg {
-  background: linear-gradient(120deg, #7c3aed 0%, #d946ef 48%, #f59e0b 100%);
+  background: linear-gradient(120deg, #2f5bff 0%, #1e3fae 48%, #f4b942 100%);
 }
 
 .blob {
@@ -80,7 +80,7 @@ body {
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #7c3aed;
+  color: #2f5bff;
   margin-bottom: 22px;
   box-shadow: 0 6px 16px -8px rgba(124, 58, 237, 0.25);
 }
@@ -115,7 +115,7 @@ body {
   font-family: Inter, sans-serif;
   padding: 12px;
   background: transparent;
-  color: #221d33;
+  color: #0f172a;
   min-width: 0;
 }
 
@@ -130,7 +130,7 @@ body {
   align-items: center;
   gap: 8px;
   font-size: 0.88rem;
-  color: #6f6a85;
+  color: #64748b;
   font-weight: 600;
 }
 .trust .dot {
@@ -170,7 +170,7 @@ body {
 }
 .ticket .meta {
   font-size: 0.82rem;
-  color: #6f6a85;
+  color: #64748b;
   font-weight: 600;
   margin-bottom: 12px;
 }
@@ -188,14 +188,14 @@ body {
 }
 .ticket .price small {
   font-weight: 700;
-  color: #6f6a85;
+  color: #64748b;
   font-size: 0.75rem;
 }
 .ticket .qr {
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #221d33;
+  background: #0f172a;
   display: grid;
   place-items: center;
   color: #fff;
@@ -239,19 +239,19 @@ body {
   font-family: Nunito, sans-serif;
   font-weight: 800;
   font-size: 0.92rem;
-  color: #221d33;
+  color: #0f172a;
   cursor: pointer;
   transition: all 0.15s;
   text-decoration: none;
 }
 .cat:hover {
-  border-color: #7c3aed;
+  border-color: #2f5bff;
   transform: translateY(-2px);
 }
 .cat.active {
-  background: #221d33;
+  background: #0f172a;
   color: #fff;
-  border-color: #221d33;
+  border-color: #0f172a;
 }
 .cat .emoji-ic {
   width: 30px;

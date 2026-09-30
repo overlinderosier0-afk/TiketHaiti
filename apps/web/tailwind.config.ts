@@ -10,14 +10,15 @@ export default {
         campy: '#2f5bff',
         campyDark: '#1e3fae',
         cream: '#fff9f1',
-        // Thème v2 "sunset" : violet / rose / ambre.
+        // Thème v2 : mise en page de la maquette, mais palette d'origine
+        // (bleu campy #2F5BFF, bleu foncé #1E3FAE, ambre sun #F4B942).
         tike: {
-          bg: '#FBFAFF',
-          ink: '#221D33',
-          muted: '#6F6A85',
-          violet: '#7C3AED',
-          pink: '#EC4899',
-          amber: '#F59E0B'
+          bg: '#FFF9F1',
+          ink: '#0F172A',
+          muted: '#64748B',
+          violet: '#2F5BFF',
+          pink: '#1E3FAE',
+          amber: '#F4B942'
         }
       },
       fontFamily: {
@@ -25,7 +26,7 @@ export default {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
       },
       boxShadow: {
-        tike: '0 20px 45px -18px rgba(124,58,237,.22)'
+        tike: '0 20px 45px -18px rgba(47,91,255,.22)'
       }
     }
   },

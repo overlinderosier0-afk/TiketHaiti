@@ -45,10 +45,10 @@ function fmtPrice(p: number): React.ReactNode {
 }
 
 const POSTER_GRADIENTS = [
-  'linear-gradient(135deg,#7C3AED,#EC4899)',
-  'linear-gradient(135deg,#EC4899,#F59E0B)',
-  'linear-gradient(135deg,#4F46E5,#7C3AED)',
-  'linear-gradient(135deg,#F59E0B,#EC4899)'
+  'linear-gradient(135deg,#2F5BFF,#1E3FAE)',
+  'linear-gradient(135deg,#1E3FAE,#F4B942)',
+  'linear-gradient(135deg,#3B82F6,#2F5BFF)',
+  'linear-gradient(135deg,#F4B942,#1E3FAE)'
 ];
 
 function Poster({ e, i, h }: { e: EventItem; i: number; h: string }) {
@@ -76,7 +76,7 @@ function SearchBar() {
         router.push('/events');
       }}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#221D33" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', opacity: 0.45 }}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', opacity: 0.45 }}>
         <circle cx="11" cy="11" r="7" />
         <path d="M20 20l-3.5-3.5" />
       </svg>
@@ -136,9 +136,9 @@ function HeroTickets() {
 function Hero() {
   return (
     <header className="relative overflow-hidden">
-      <div aria-hidden className="blob" style={{ width: 480, height: 480, background: '#DDD0FF', top: -140, left: -120 }} />
-      <div aria-hidden className="blob" style={{ width: 420, height: 420, background: '#FBD3E8', top: 40, right: -120 }} />
-      <div aria-hidden className="blob" style={{ width: 300, height: 300, background: '#FDE9C8', bottom: -120, left: '38%' }} />
+      <div aria-hidden className="blob" style={{ width: 480, height: 480, background: '#D7E3FF', top: -140, left: -120 }} />
+      <div aria-hidden className="blob" style={{ width: 420, height: 420, background: '#E4EBFF', top: 40, right: -120 }} />
+      <div aria-hidden className="blob" style={{ width: 300, height: 300, background: '#FDEECD', bottom: -120, left: '38%' }} />
       <div className="container relative grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-20">
         <div>
           <span className="kicker">
@@ -255,7 +255,7 @@ function EventsGrid() {
             return (
               <article
                 key={e.id}
-                className="group overflow-hidden rounded-[28px] border border-tike-violet/10 bg-white shadow-[0_14px_30px_-20px_rgba(34,29,51,0.25)] transition hover:-translate-y-1.5 hover:shadow-tike"
+                className="group overflow-hidden rounded-[28px] border border-tike-violet/10 bg-white shadow-[0_14px_30px_-20px_rgba(15,23,42,0.25)] transition hover:-translate-y-1.5 hover:shadow-tike"
               >
                 <div className="relative h-[170px] overflow-hidden">
                   {uploadUrl(e.bannerUrl) ? (
@@ -267,7 +267,7 @@ function EventsGrid() {
                   ) : (
                     <div className="h-full w-full" style={{ background: POSTER_GRADIENTS[i % POSTER_GRADIENTS.length] }} />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[rgba(20,12,40,0.45)]" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[rgba(15,23,42,0.45)]" />
                   <div className="absolute left-3.5 top-3.5 z-[2] rounded-[14px] bg-white/95 px-3 py-1.5 text-center shadow">
                     <b className="block font-display text-[1.05rem] font-black leading-none text-tike-ink">{b.day}</b>
                     <span className="text-[0.68rem] font-bold uppercase tracking-wider text-tike-violet">{b.mon}</span>
@@ -323,7 +323,7 @@ function How() {
     <div className="container py-5">
       <div
         id="kijan-li-mache"
-        className="scroll-mt-24 rounded-[36px] border border-tike-violet/10 bg-white px-6 py-14 shadow-[0_24px_50px_-30px_rgba(124,58,237,0.25)] sm:px-12"
+        className="scroll-mt-24 rounded-[36px] border border-tike-violet/10 bg-white px-6 py-14 shadow-[0_24px_50px_-30px_rgba(47,91,255,0.25)] sm:px-12"
       >
         <h2 className="text-center font-display text-[1.9rem] font-black text-tike-ink">Kijan li mache</h2>
         <p className="mb-10 mt-2 text-center text-tike-muted">Twa etap, epi w ap danse.</p>
