@@ -85,8 +85,53 @@ export default async function EventDetailPage({
   const isPast = new Date(event.eventDate) < new Date();
   const banner = publicUploadUrl(event.bannerUrl);
 
+  // Données structurées schema.org/Event : permettent à Google d'afficher
+  // l'événement en résultat enrichi (date, prix, disponibilité).
+  const eventUrl = `https://tikeayiti.com/events/${event.slug || event.id}`;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    description: event.description,
+    startDate: new Date(event.eventDate).toISOString(),
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    location: {
+      '@type': 'Place',
+      name: event.address || event.city?.name,
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: event.city?.name,
+        addressCountry: 'HT'
+      }
+    },
+    image: banner ? [banner] : [],
+    offers: {
+      '@type': 'Offer',
+      url: eventUrl,
+      price: event.price,
+      priceCurrency: 'HTG',
+      availability:
+        event.ticketsAvailable > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/SoldOut'
+    },
+    ...(event.artistName
+      ? { performer: { '@type': 'Person', name: event.artistName } }
+      : {}),
+    organizer: {
+      '@type': 'Organization',
+      name: 'Tikè Ayiti',
+      url: 'https://tikeayiti.com'
+    }
+  };
+
   return (
     <section className="container py-14">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link
         href="/events"
         className="text-sm font-black text-campy transition hover:text-campyDark"

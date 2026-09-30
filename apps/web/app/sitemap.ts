@@ -16,7 +16,8 @@ async function publishedEvents(): Promise<ApiEvent[]> {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : data.events || [];
+    // L'API renvoie { items: [...] } (pas { events: [...] }).
+    return Array.isArray(data) ? data : data.items || data.events || [];
   } catch {
     // L'API est injoignable au build : sitemap sans les événements.
     return [];
