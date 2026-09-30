@@ -10,9 +10,11 @@
 }
 
 body {
-  color: var(--ink);
-  background: #f8f9fd;
-  font-family: Arial, Helvetica, sans-serif;
+  color: #221d33;
+  background: #fbfafe;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 .container {
@@ -46,4 +48,222 @@ body {
 
 .floaty {
   animation: bob 3s ease-in-out infinite;
+}
+
+/* ================= Thème v2 "sunset" (page d'accueil) ================= */
+
+.tike-grad-text {
+  background: linear-gradient(120deg, #7c3aed 0%, #d946ef 48%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.tike-grad-bg {
+  background: linear-gradient(120deg, #7c3aed 0%, #d946ef 48%, #f59e0b 100%);
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid rgba(124, 58, 237, 0.14);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #7c3aed;
+  margin-bottom: 22px;
+  box-shadow: 0 6px 16px -8px rgba(124, 58, 237, 0.25);
+}
+.kicker i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+  animation: tike-pulse 2s infinite;
+}
+@keyframes tike-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.searchbar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 8px 8px 22px;
+  box-shadow: 0 20px 45px -18px rgba(124, 58, 237, 0.22);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  max-width: 540px;
+}
+.searchbar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  font-family: Inter, sans-serif;
+  padding: 12px;
+  background: transparent;
+  color: #221d33;
+  min-width: 0;
+}
+
+.trust {
+  display: flex;
+  gap: 22px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+.trust > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #6f6a85;
+  font-weight: 600;
+}
+.trust .dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e9f9ef;
+  display: grid;
+  place-items: center;
+  color: #16a34a;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+/* Tickets empilés du hero */
+.ticket {
+  position: absolute;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 20px 45px -18px rgba(124, 58, 237, 0.22);
+  padding: 20px;
+  width: 290px;
+  border: 1px solid rgba(124, 58, 237, 0.08);
+}
+.ticket .poster {
+  height: 120px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.ticket h3 {
+  font-size: 1.02rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+  font-family: Nunito, sans-serif;
+}
+.ticket .meta {
+  font-size: 0.82rem;
+  color: #6f6a85;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.ticket .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 2px dashed rgba(124, 58, 237, 0.18);
+  padding-top: 12px;
+}
+.ticket .price {
+  font-family: Nunito, sans-serif;
+  font-weight: 900;
+  font-size: 1.15rem;
+}
+.ticket .price small {
+  font-weight: 700;
+  color: #6f6a85;
+  font-size: 0.75rem;
+}
+.ticket .qr {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #221d33;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+.t1 { top: 20px; left: 30px; transform: rotate(-6deg); }
+.t2 { top: 150px; right: 10px; transform: rotate(5deg); }
+.t3 { bottom: 0; left: 90px; transform: rotate(-2deg); }
+
+.float-badge {
+  position: absolute;
+  background: #fff;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 20px 45px -18px rgba(124, 58, 237, 0.22);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.08);
+}
+.fb-1 { top: 0; right: 60px; animation: tike-float 5s ease-in-out infinite; }
+.fb-2 { bottom: 40px; left: 0; animation: tike-float 6s ease-in-out infinite reverse; }
+@keyframes tike-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Pastilles catégories */
+.cat {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid rgba(124, 58, 237, 0.12);
+  border-radius: 999px;
+  padding: 11px 20px;
+  font-family: Nunito, sans-serif;
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: #221d33;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.cat:hover {
+  border-color: #7c3aed;
+  transform: translateY(-2px);
+}
+.cat.active {
+  background: #221d33;
+  color: #fff;
+  border-color: #221d33;
+}
+.cat .emoji-ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  background: linear-gradient(120deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.1), rgba(245, 158, 11, 0.12));
+}
+
+@media (max-width: 960px) {
+  .t1 { left: 0; }
+  .t3 { left: 40px; }
 }

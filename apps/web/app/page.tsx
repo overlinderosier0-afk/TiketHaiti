@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, uploadUrl } from '../lib/api';
 
@@ -20,305 +21,157 @@ interface PageResult {
   total: number;
 }
 
-/* ---------- Petits éléments décoratifs ---------- */
+/* ---------- Utilitaires ---------- */
 
-/** Pastilles du hero : les catégories réellement utilisées (texte libre admin). */
-function HeroChips() {
-  const [cats, setCats] = useState<string[]>([]);
-  useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    fetch(`${base}/events/categories`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((list) => Array.isArray(list) && setCats(list.slice(0, 4)))
-      .catch(() => {});
-  }, []);
-  if (cats.length === 0) return null;
+const MONTHS_HT = ['Jan', 'Fev', 'Mas', 'Avr', 'Me', 'Jen', 'Jiy', 'Out', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function dateBadge(iso: string): { day: number; mon: string } {
+  const d = new Date(iso);
+  return { day: d.getDate(), mon: MONTHS_HT[d.getMonth()] ?? '' };
+}
+
+function shortMeta(e: EventItem): string {
+  const d = new Date(e.eventDate);
+  return `${e.city?.name ?? ''} · ${d.getDate()} ${MONTHS_HT[d.getMonth()] ?? ''}`.trim();
+}
+
+function fmtPrice(p: number): React.ReactNode {
+  if (p <= 0) return <>Gratis</>;
   return (
-    <div className="mt-8 flex flex-wrap gap-2">
-      {cats.map((c) => (
-        <Link
-          key={c}
-          href={`/events?category=${encodeURIComponent(c)}`}
-          className="rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-black text-slate-600 backdrop-blur transition hover:border-campy hover:text-campy"
-        >
-          {c}
-        </Link>
-      ))}
-    </div>
+    <>
+      {p.toLocaleString('fr-FR')} <small>HTG</small>
+    </>
   );
 }
 
-function Asterisk({ className = '' }: { className?: string }) {
-  return (
-    <span aria-hidden className={`inline-block select-none font-black text-campy ${className}`}>
-      ✳
-    </span>
-  );
-}
+const POSTER_GRADIENTS = [
+  'linear-gradient(135deg,#7C3AED,#EC4899)',
+  'linear-gradient(135deg,#EC4899,#F59E0B)',
+  'linear-gradient(135deg,#4F46E5,#7C3AED)',
+  'linear-gradient(135deg,#F59E0B,#EC4899)'
+];
 
-function Dots({ className = '' }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`pointer-events-none ${className}`}
-      style={{
-        backgroundImage: 'radial-gradient(rgba(47,91,255,0.35) 2px, transparent 2px)',
-        backgroundSize: '18px 18px'
-      }}
-    />
-  );
-}
-
-/** Faux QR décoratif (motif déterministe) pour le mockup téléphone. */
-function FakeQr() {
-  const cells = [];
-  for (let i = 0; i < 64; i++) {
-    const on = (i * 7 + 13) % 3 !== 0 && (i * 11 + 5) % 7 !== 0;
-    cells.push(
-      <span key={i} className={`block h-full w-full ${on ? 'bg-slate-900' : 'bg-white'}`} />
+function Poster({ e, i, h }: { e: EventItem; i: number; h: string }) {
+  const url = uploadUrl(e.bannerUrl);
+  if (url) {
+    return (
+      <div className="poster" style={{ height: h }}>
+        <img src={url} alt={e.title} className="h-full w-full object-cover" />
+      </div>
     );
   }
+  return <div className="poster" style={{ height: h, background: POSTER_GRADIENTS[i % POSTER_GRADIENTS.length] }} />;
+}
+
+/* ---------- Hero ---------- */
+
+function SearchBar() {
+  const router = useRouter();
+  const [q, setQ] = useState('');
   return (
-    <div className="grid grid-cols-8 gap-[2px] rounded-xl bg-white p-2 shadow-inner" style={{ width: 120, height: 120 }}>
-      {cells}
-    </div>
+    <form
+      className="searchbar"
+      onSubmit={(ev) => {
+        ev.preventDefault();
+        router.push('/events');
+      }}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#221D33" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', opacity: 0.45 }}>
+        <circle cx="11" cy="11" r="7" />
+        <path d="M20 20l-3.5-3.5" />
+      </svg>
+      <input
+        type="text"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Chèche yon evènman, yon atis, yon vil…"
+        aria-label="Chèche yon evènman"
+      />
+      <button
+        type="submit"
+        className="rounded-full bg-gradient-to-r from-tike-violet via-tike-pink to-tike-amber px-7 py-3 font-display text-[0.95rem] font-extrabold text-white shadow-lg transition hover:-translate-y-0.5"
+      >
+        Chèche
+      </button>
+    </form>
   );
 }
 
-/** Mockup téléphone avec un billet TiketHaiti à l'intérieur. */
-function PhoneMockup() {
+const TICKET_CLASSES = ['t1', 't2', 't3'];
+
+function HeroTickets() {
+  const [events, setEvents] = useState<EventItem[] | null>(null);
+  useEffect(() => {
+    api<PageResult>('/events?limit=3')
+      .then((r) => setEvents(r.items))
+      .catch(() => setEvents([]));
+  }, []);
+
   return (
-    <div className="relative mx-auto w-[280px] rotate-3 sm:w-[300px]">
-      <Asterisk className="absolute -left-10 top-6 text-4xl" />
-      <Dots className="absolute -right-12 bottom-10 h-24 w-24" />
-      <div className="animate-float rounded-[2.8rem] border-[10px] border-slate-900 bg-white shadow-2xl">
-        <div className="relative overflow-hidden rounded-[2rem] bg-cream px-4 pb-5 pt-8">
-          <div className="absolute left-1/2 top-2 h-5 w-24 -translate-x-1/2 rounded-full bg-slate-900" />
-          <p className="text-center text-sm font-black text-campy">Tikè Ayiti</p>
-          <div className="mt-3 overflow-hidden rounded-2xl bg-gradient-to-br from-campy to-campyDark p-4 text-white">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-white/70">Billet</p>
-            <p className="mt-1 text-lg font-black leading-tight">Festival Mizik<br />Cap-Haïtien</p>
-            <p className="mt-2 text-xs font-bold text-white/80">Sam. 12 déc. · 19h00</p>
+    <div className="relative mx-auto h-[440px] w-full max-w-[480px]">
+      {(events ?? []).slice(0, 3).map((e, i) => (
+        <Link key={e.id} href={`/events/${e.slug || e.id}`} className={`ticket ${TICKET_CLASSES[i]}`}>
+          <Poster e={e} i={i} h="120px" />
+          <h3 className="line-clamp-1">{e.title}</h3>
+          <div className="meta">{shortMeta(e)}</div>
+          <div className="row">
+            <span className="price">{fmtPrice(e.price)}</span>
+            <span className="qr">QR</span>
           </div>
-          <div className="mt-3 flex items-center justify-between rounded-2xl bg-white p-3 shadow">
-            <FakeQr />
-            <div className="pl-3">
-              <p className="font-mono text-sm font-black text-slate-900">TH-8F3K2A</p>
-              <p className="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-700">
-                ✓ Vérifié
-              </p>
-              <p className="mt-2 text-[11px] font-bold text-slate-500">2 billets · 1 500 HTG</p>
-            </div>
-          </div>
-          <div className="mt-3 rounded-full bg-campy py-2.5 text-center text-sm font-black text-white">
-            Mes billets
-          </div>
+        </Link>
+      ))}
+      {events !== null && events.length === 0 && (
+        <div className="grid h-full place-items-center rounded-[28px] border border-dashed border-tike-violet/25 bg-white/60 p-8 text-center">
+          <p className="font-bold text-tike-muted">
+            Evènman k ap vini yo ap parèt isit la.
+          </p>
         </div>
-      </div>
-      {/* Badges flottants */}
-      <div className="animate-float-slow absolute -right-6 top-16 rounded-2xl bg-white px-4 py-2.5 shadow-xl">
-        <p className="text-xs font-black text-emerald-600">✓ Paiement confirmé</p>
-        <p className="text-[11px] font-bold text-slate-500">via MonCash</p>
-      </div>
-      <div className="animate-float-slow absolute -left-8 bottom-20 rounded-2xl bg-white px-4 py-2.5 shadow-xl">
-        <p className="text-xs font-black text-slate-900">🎟️ QR scanné</p>
-        <p className="text-[11px] font-bold text-slate-500">Entrée validée</p>
-      </div>
+      )}
+      <span className="float-badge fb-1">⚡ MonCash & NatCash</span>
+      <span className="float-badge fb-2">✓ Tikè voye sou WhatsApp</span>
     </div>
   );
 }
-
-/* ---------- Sections ---------- */
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/90 via-cream/60 to-white">
-      {/* Halos décoratifs */}
-      <div aria-hidden className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-campy/15 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-amber-300/25 blur-3xl" />
-      <Dots className="absolute left-8 top-24 hidden h-28 w-28 lg:block" />
-      <div className="container relative grid items-center gap-12 py-14 sm:py-16 lg:grid-cols-2 lg:py-24">
+    <header className="relative overflow-hidden">
+      <div aria-hidden className="blob" style={{ width: 480, height: 480, background: '#DDD0FF', top: -140, left: -120 }} />
+      <div aria-hidden className="blob" style={{ width: 420, height: 420, background: '#FBD3E8', top: 40, right: -120 }} />
+      <div aria-hidden className="blob" style={{ width: 300, height: 300, background: '#FDE9C8', bottom: -120, left: '38%' }} />
+      <div className="container relative grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-20">
         <div>
-          <p className="inline-block rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-campy shadow-sm">
-            🎟️ La billetterie 100% haïtienne
-          </p>
-          <h1 className="mt-6 text-4xl font-black leading-[1.05] text-slate-900 sm:text-5xl md:text-6xl">
-            Tes billets d'événements,{' '}
-            <span className="bg-gradient-to-r from-campy to-campyDark bg-clip-text text-transparent">sans faire la queue.</span>
-          </h1>
-          <p className="mt-6 max-w-lg text-lg leading-8 text-slate-600">
-            Concerts, festivals, soirées… Choisis ton événement, paie par transfert{' '}
-            <strong>MonCash</strong> ou <strong>NatCash</strong>, et reçois ton billet QR
-            dès que ton paiement est validé.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link
-              href="/events"
-              className="rounded-full bg-campy px-8 py-3.5 font-black text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark"
-            >
-              Voir les événements
-            </Link>
-            <a
-              href="#comment-ca-marche"
-              className="inline-flex items-center gap-3 font-black text-slate-900"
-            >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-campy shadow">
-                ▶
-              </span>
-              Comment ça marche
-            </a>
-          </div>
-          <HeroChips />
-        </div>
-        <PhoneMockup />
-      </div>
-      {/* Vague de transition */}
-      <svg aria-hidden viewBox="0 0 1440 60" preserveAspectRatio="none" className="relative block h-10 w-full text-campy">
-        <path d="M0,32 C240,60 480,0 720,24 C960,48 1200,8 1440,32 L1440,60 L0,60 Z" fill="currentColor" />
-      </svg>
-    </section>
-  );
-}
-
-/** Bandeau défilant avec les villes (décoratif). */
-function Marquee() {
-  const cities = ['Port-au-Prince', 'Cap-Haïtien', 'Jacmel', 'Les Cayes', 'Gonaïves', 'Saint-Marc', 'Pétion-Ville', 'Jérémie'];
-  const row = [...cities, ...cities];
-  return (
-    <div className="overflow-hidden bg-campy py-4">
-      <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap">
-        {row.map((c, i) => (
-          <span key={i} className="flex items-center gap-8 text-sm font-black uppercase tracking-[0.25em] text-white">
-            {c} <span className="text-white/50">✳</span>
+          <span className="kicker">
+            <i /> Billetterie 100% ayisyèn
           </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function StatsBand() {
-  const stats: [string, string][] = [
-    ['100%', 'Billets numériques'],
-    ['2', 'Paiements locaux'],
-    ['24/7', 'Billets accessibles'],
-    ['0', "File d'attente"]
-  ];
-  return (
-    <section className="bg-white">
-      <div className="container grid grid-cols-2 gap-6 py-12 md:grid-cols-4">
-        {stats.map(([value, label]) => (
-          <div key={label} className="rounded-3xl bg-cream p-6 text-center transition hover:-translate-y-1 hover:shadow-lg">
-            <p className="bg-gradient-to-r from-campy to-campyDark bg-clip-text text-4xl font-black text-transparent md:text-5xl">{value}</p>
-            <p className="mt-1 text-sm font-bold text-slate-600">{label}</p>
+          <h1 className="font-display text-[clamp(2.4rem,5vw,3.9rem)] font-black leading-[1.06] tracking-tight text-tike-ink">
+            Tikè ou,
+            <br />
+            <span className="tike-grad-text">nan poch ou.</span>
+          </h1>
+          <p className="mt-5 max-w-[480px] text-[1.12rem] leading-[1.65] text-tike-muted">
+            Achte tikè pou pi bèl evènman Ayiti yo. Peye ak <b className="text-tike-ink">MonCash</b> oswa{' '}
+            <b className="text-tike-ink">NatCash</b>, resevwa QR ou sou <b className="text-tike-ink">WhatsApp</b> — antre
+            san traka.
+          </p>
+          <div className="mt-7">
+            <SearchBar />
           </div>
-        ))}
+          <div className="trust">
+            <div><span className="dot">✓</span> Peman sekirize</div>
+            <div><span className="dot">✓</span> QR imedyat</div>
+            <div><span className="dot">✓</span> San aplikasyon</div>
+          </div>
+        </div>
+        <HeroTickets />
       </div>
-    </section>
+    </header>
   );
 }
 
-function EventsShowcase() {
-  const [data, setData] = useState<PageResult | null>(null);
-  const [failed, setFailed] = useState(false);
+/* ---------- Catégories ---------- */
 
-  useEffect(() => {
-    api<PageResult>('/events?limit=3')
-      .then(setData)
-      .catch(() => setFailed(true));
-  }, []);
-
-  return (
-    <section className="container py-14 sm:py-20">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-campy">À l'affiche</p>
-          <h2 className="mt-3 text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
-            Les événements du moment
-          </h2>
-        </div>
-        <Link href="/events" className="shrink-0 font-black text-campy">
-          Tout voir →
-        </Link>
-      </div>
-
-      {!data && !failed && (
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-6 md:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-3xl bg-white p-3 shadow sm:rounded-[1.8rem] sm:p-6">
-              <div className="h-4 w-16 rounded-full bg-blue-50 sm:h-5 sm:w-24" />
-              <div className="mt-3 h-3 w-24 rounded bg-slate-100 sm:mt-5 sm:h-4 sm:w-40" />
-              <div className="mt-2 h-5 w-3/4 rounded bg-slate-100 sm:mt-3 sm:h-7" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {failed && (
-        <p className="mt-10 rounded-2xl bg-white p-6 text-center font-bold text-slate-500 shadow">
-          Impossible de charger les événements pour le moment.{' '}
-          <Link href="/events" className="text-campy">Voir la liste complète →</Link>
-        </p>
-      )}
-
-      {data && data.items.length === 0 && (
-        <p className="mt-10 rounded-2xl bg-white p-6 text-center font-bold text-slate-500 shadow">
-          Aucun événement publié pour le moment. Revenez bientôt !
-        </p>
-      )}
-
-      {data && data.items.length > 0 && (
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-6 md:grid-cols-3">
-          {data.items.map((event) => (
-            <article
-              key={event.id}
-              className="group rounded-3xl border border-slate-100 bg-white p-3 shadow-sm transition hover:-translate-y-1.5 hover:shadow-xl sm:rounded-[1.8rem] sm:p-6"
-            >
-              {uploadUrl(event.bannerUrl) && (
-                <div className="-m-3 mb-3 h-28 overflow-hidden rounded-t-3xl sm:-mx-6 sm:-mt-6 sm:mb-6 sm:h-44 sm:rounded-t-[1.8rem]">
-                  <img src={uploadUrl(event.bannerUrl)!} alt={event.title} className="h-full w-full object-cover transition group-hover:scale-105" />
-                </div>
-              )}
-              {event.category && (
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-campy">
-                  {event.category}
-                </span>
-              )}
-              <p className="mt-3 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 sm:mt-4 sm:text-xs sm:tracking-[0.18em]">
-                {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · {event.city?.name}
-              </p>
-              <h3 className="mt-1 line-clamp-2 text-base font-black text-slate-900 sm:mt-2 sm:text-2xl">{event.title}</h3>
-              <p className="mt-2 text-xs font-bold text-slate-600 sm:mt-3 sm:text-sm">
-                {event.price > 0 ? `À partir de ${event.price.toLocaleString('fr-FR')} HTG` : 'Entrée gratuite'}
-              </p>
-              <Link
-                href={`/events/${event.slug || event.id}`}
-                className="mt-3 hidden rounded-full bg-slate-900 px-5 py-2.5 text-sm font-black text-white transition hover:bg-campy sm:mt-5 sm:inline-flex"
-              >
-                Prendre mes billets →
-              </Link>
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-/** Tuiles de catégories avec vraies photos (liens vers le catalogue). */
-function Categories() {
-  // Tuiles alimentées par les vraies catégories en base (endpoint public).
-  // Chaque tuile filtre le catalogue : /events?category=Nom.
-  const IMG_BY_CATEGORY: Record<string, string> = {
-    concert: '/categories/concert.jpg',
-    festival: '/categories/festival.jpg',
-    culture: '/categories/soiree.jpg',
-    sport: '/categories/sport.jpg',
-    conference: '/categories/conference.jpg'
-  };
-  const FALLBACK_IMG = '/categories/soiree.jpg';
-  const normalize = (s: string) =>
-    s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function CategoryPills() {
   const [cats, setCats] = useState<string[]>([]);
   useEffect(() => {
     const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -327,277 +180,213 @@ function Categories() {
       .then((list) => Array.isArray(list) && setCats(list))
       .catch(() => {});
   }, []);
+  if (cats.length === 0) return null;
   return (
-    <section className="bg-cream/60 py-14 sm:py-20">
-      <div className="container">
-        <p className="text-xs font-black uppercase tracking-[0.25em] text-campy">Parcourir</p>
-        <h2 className="mt-3 text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
-          Qu'est-ce qui te tente ?
-        </h2>
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
-          {cats.map((c) => {
-            const img = IMG_BY_CATEGORY[normalize(c)] || FALLBACK_IMG;
+    <div className="container py-6">
+      <div className="flex gap-3 overflow-x-auto pb-3" style={{ scrollbarWidth: 'none' }}>
+        <Link href="/events" className="cat active">
+          <span className="emoji-ic">✦</span> Tout
+        </Link>
+        {cats.map((c) => (
+          <Link key={c} href={`/events?category=${encodeURIComponent(c)}`} className="cat">
+            <span className="emoji-ic">✦</span> {c}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Événements ---------- */
+
+function EventsGrid() {
+  const [data, setData] = useState<PageResult | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    api<PageResult>('/events?limit=4')
+      .then(setData)
+      .catch(() => setFailed(true));
+  }, []);
+
+  return (
+    <section className="container py-14">
+      <div className="mb-7 flex items-end justify-between">
+        <div>
+          <h2 className="font-display text-[1.9rem] font-black tracking-tight text-tike-ink">
+            Evènman k ap vini
+          </h2>
+          <p className="mt-1.5 text-tike-muted">Pi bèl sware yo, yon klik lwen.</p>
+        </div>
+        <Link href="/events" className="font-bold text-tike-violet">
+          Wè tout →
+        </Link>
+      </div>
+
+      {!data && !failed && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="animate-pulse rounded-[28px] bg-white p-5 shadow">
+              <div className="h-40 rounded-2xl bg-tike-violet/10" />
+              <div className="mt-4 h-4 w-3/4 rounded bg-slate-100" />
+              <div className="mt-2 h-4 w-1/2 rounded bg-slate-100" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {failed && (
+        <p className="rounded-[28px] bg-white p-6 text-center font-bold text-tike-muted shadow">
+          Nou pa ka chaje evènman yo pou kounye a.{' '}
+          <Link href="/events" className="text-tike-violet">Wè lis konplè a →</Link>
+        </p>
+      )}
+
+      {data && data.items.length === 0 && (
+        <p className="rounded-[28px] bg-white p-6 text-center font-bold text-tike-muted shadow">
+          Okenn evènman pibliye pou kounye a. Tounen byento !
+        </p>
+      )}
+
+      {data && data.items.length > 0 && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {data.items.map((e, i) => {
+            const b = dateBadge(e.eventDate);
             return (
-              <Link
-                key={c}
-                href={`/events?category=${encodeURIComponent(c)}`}
-                className="group relative h-36 overflow-hidden rounded-3xl text-white shadow-md transition hover:-translate-y-1.5 hover:shadow-xl sm:h-44"
+              <article
+                key={e.id}
+                className="group overflow-hidden rounded-[28px] border border-tike-violet/10 bg-white shadow-[0_14px_30px_-20px_rgba(34,29,51,0.25)] transition hover:-translate-y-1.5 hover:shadow-tike"
               >
-                <img
-                  src={img}
-                  alt={c}
-                  loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110"
-                />
-              <span className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
-              <span className="absolute inset-x-0 bottom-0 block p-4 sm:p-5">
-                <span className="block text-sm font-black sm:text-base">{c}</span>
-                <span className="mt-0.5 inline-block text-xs font-bold text-white/80 opacity-0 transition group-hover:opacity-100">
-                  Explorer →
-                </span>
-              </span>
-            </Link>
+                <div className="relative h-[170px] overflow-hidden">
+                  {uploadUrl(e.bannerUrl) ? (
+                    <img
+                      src={uploadUrl(e.bannerUrl)!}
+                      alt={e.title}
+                      className="h-full w-full object-cover transition group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full" style={{ background: POSTER_GRADIENTS[i % POSTER_GRADIENTS.length] }} />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[rgba(20,12,40,0.45)]" />
+                  <div className="absolute left-3.5 top-3.5 z-[2] rounded-[14px] bg-white/95 px-3 py-1.5 text-center shadow">
+                    <b className="block font-display text-[1.05rem] font-black leading-none text-tike-ink">{b.day}</b>
+                    <span className="text-[0.68rem] font-bold uppercase tracking-wider text-tike-violet">{b.mon}</span>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="mb-1.5 text-[0.8rem] font-semibold text-tike-muted">
+                    {e.city?.name ?? ''}
+                  </div>
+                  <h3 className="line-clamp-2 font-display text-[1.04rem] font-extrabold leading-snug text-tike-ink">
+                    {e.title}
+                  </h3>
+                  <div className="mt-3.5 flex items-center justify-between border-t-2 border-dashed border-tike-violet/15 pt-3.5">
+                    <span className="font-display font-black text-tike-ink">{fmtPrice(e.price)}</span>
+                    <Link
+                      href={`/events/${e.slug || e.id}`}
+                      className="rounded-full bg-gradient-to-r from-tike-violet via-tike-pink to-tike-amber px-5 py-2 font-display text-[0.85rem] font-extrabold text-white transition hover:-translate-y-0.5"
+                    >
+                      Achte
+                    </Link>
+                  </div>
+                </div>
+              </article>
             );
           })}
         </div>
-        <p className="mt-4 text-center text-[11px] font-medium text-slate-400">
-          Photos : contributeurs Flickr et Wikimedia Commons (tuile « Conférence » : Biswarup Ganguly, CC BY), licences Creative Commons
-        </p>
-      </div>
+      )}
     </section>
   );
 }
 
-function Features() {
-  const features = [
+/* ---------- Kijan li mache ---------- */
+
+function How() {
+  const steps = [
     {
-      icon: '💳',
-      title: 'Paiement MonCash & NatCash',
-      text: 'Paie comme tu as l’habitude : un simple transfert depuis ton téléphone, avec ta référence de commande en note.',
-      link: '/events',
-      linkLabel: 'Voir les événements'
+      n: '1',
+      title: 'Chwazi evènman ou',
+      text: <>Chèche pa vil, pa dat oswa pa kategori. <b className="text-tike-ink">Chwazi plas ou</b> an kèk segonn.</>
     },
     {
-      icon: '🎟️',
-      title: 'Billets QR sécurisés',
-      text: 'Chaque billet porte un QR signé et unique. Impossible à falsifier, vérifiable en un scan à l’entrée.',
-      link: '/tickets',
-      linkLabel: 'Mes billets'
+      n: '2',
+      title: 'Peye fasil',
+      text: <><b className="text-tike-ink">MonCash</b> oswa <b className="text-tike-ink">NatCash</b>, dirèkteman sou telefòn ou. San kat labank.</>
     },
     {
-      icon: '⚡',
-      title: 'Billets émis après validation',
-      text: 'Dès que notre équipe confirme ton transfert (en général quelques minutes), tes billets apparaissent dans ton compte, avec PDF téléchargeable.',
-      link: '/events',
-      linkLabel: 'En profiter'
-    },
-    {
-      icon: '🇭🇹',
-      title: 'Pensé pour Haïti',
-      text: 'Prix en gourdes, interface en français, support local qui comprend comment tu paies vraiment.',
-      link: '/register',
-      linkLabel: 'Créer un compte'
+      n: '3',
+      title: 'Antre ak QR ou',
+      text: <>Resevwa tikè ou sou <b className="text-tike-ink">WhatsApp</b> imedyatman. Montre QR la nan pòt la.</>
     }
   ];
   return (
-    <section className="bg-white py-14 sm:py-20">
-      <div className="container">
-        <p className="text-center text-xs font-black uppercase tracking-[0.25em] text-campy">Nos atouts</p>
-        <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
-          La façon la plus simple de sortir en Haïti.
-        </h2>
-        <div className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-[1.8rem] border border-slate-100 bg-cream p-6 transition hover:-translate-y-1.5 hover:shadow-xl sm:p-7"
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
-                {f.icon}
+    <div className="container py-5">
+      <div
+        id="kijan-li-mache"
+        className="scroll-mt-24 rounded-[36px] border border-tike-violet/10 bg-white px-6 py-14 shadow-[0_24px_50px_-30px_rgba(124,58,237,0.25)] sm:px-12"
+      >
+        <h2 className="text-center font-display text-[1.9rem] font-black text-tike-ink">Kijan li mache</h2>
+        <p className="mb-10 mt-2 text-center text-tike-muted">Twa etap, epi w ap danse.</p>
+        <div className="grid gap-7 md:grid-cols-3">
+          {steps.map((s) => (
+            <div key={s.n} className="p-2.5 text-center">
+              <div className="tike-grad-text mx-auto mb-[18px] grid h-16 w-16 place-items-center rounded-[22px] border-[1.5px] border-tike-violet/15 font-display text-[1.4rem] font-black">
+                {s.n}
               </div>
-              <h3 className="mt-5 text-xl font-black text-slate-900">{f.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{f.text}</p>
-              <Link href={f.link} className="mt-4 inline-block text-sm font-black text-campy">
-                {f.linkLabel} →
-              </Link>
+              <h3 className="mb-2 font-display text-[1.1rem] font-extrabold text-tike-ink">{s.title}</h3>
+              <p className="text-[0.94rem] leading-[1.6] text-tike-muted">{s.text}</p>
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
-function HowItWorks() {
-  const steps = [
-    { n: '1', title: 'Choisis ton événement', text: 'Parcours le catalogue, choisis ta date et ton nombre de billets.' },
-    { n: '2', title: 'Paie par transfert', text: 'Envoie le montant via MonCash ou NatCash avec ta référence en note.' },
-    { n: '3', title: 'Reçois ton billet QR', text: 'Paiement confirmé, billets émis : présente ton QR à l’entrée.' }
-  ];
-  return (
-    <section id="comment-ca-marche" className="container py-14 sm:py-20">
-      <p className="text-center text-xs font-black uppercase tracking-[0.25em] text-campy">Simple comme bonjou</p>
-      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
-        Ton billet en 3 étapes
-      </h2>
-      <div className="relative mt-10 grid gap-4 sm:mt-12 sm:gap-6 md:grid-cols-3">
-        {/* Ligne de liaison (desktop) */}
-        <div aria-hidden className="absolute left-[16%] right-[16%] top-14 hidden border-t-2 border-dashed border-blue-200 md:block" />
-        {steps.map((s) => (
-          <div key={s.n} className="relative rounded-[1.8rem] bg-white p-6 shadow-sm sm:p-8">
-            <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-campy text-xl font-black text-white ring-4 ring-white">
-              {s.n}
-            </span>
-            <h3 className="mt-5 text-xl font-black text-slate-900">{s.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{s.text}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
+/* ---------- Organisateurs ---------- */
 
-/** Appel aux organisateurs. */
-function OrganizerCta() {
+function Organizer() {
   return (
-    <section className="container pb-14 sm:pb-20">
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 px-6 py-12 sm:px-10 md:px-14 md:py-16">
-        <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-campy/30 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-amber-400/20 blur-3xl" />
-        <Asterisk className="absolute right-8 top-8 text-5xl !text-white/20" />
-        <div className="relative grid items-center gap-10 lg:grid-cols-2">
+    <div className="container py-5">
+      <div
+        id="organizateur"
+        className="relative scroll-mt-24 overflow-hidden rounded-[36px] bg-gradient-to-br from-tike-violet via-tike-pink to-tike-amber p-10 text-white sm:p-14"
+      >
+        <div aria-hidden className="absolute -right-[100px] -top-[160px] h-[420px] w-[420px] rounded-full bg-white/15" />
+        <div aria-hidden className="absolute -bottom-[120px] left-[20%] h-[260px] w-[260px] rounded-full bg-white/10" />
+        <div className="relative flex flex-wrap items-center justify-between gap-8">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-amber-300">Organisateurs</p>
-            <h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">
-              Tu organises un événement ?
-            </h2>
-            <p className="mt-4 max-w-md leading-7 text-slate-300">
-              Vends tes billets en ligne sans site web : publie ton événement, reçois les
-              paiements MonCash & NatCash, et contrôle les entrées avec un simple scan QR.
+            <span className="mb-[18px] inline-block rounded-full bg-white/20 px-[18px] py-2 text-[0.85rem] font-extrabold">
+              Komisyon 3% sèlman
+            </span>
+            <h2 className="mb-2.5 font-display text-[2rem] font-black tracking-tight">Ou òganize evènman ?</h2>
+            <p className="max-w-[520px] leading-[1.6] text-white/90">
+              Kreye evènman ou gratis, vann tikè anliy, swiv lavant ou an dirèk epi resevwa lajan ou sou MonCash oswa
+              NatCash.
             </p>
-            <Link
-              href="/register"
-              className="mt-8 inline-block rounded-full bg-campy px-8 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-campyDark"
-            >
-              Créer mon compte
-            </Link>
           </div>
-          <ul className="space-y-4">
-            {[
-              ['🚀', 'Mise en vente en quelques minutes'],
-              ['💰', 'Paiements MonCash & NatCash'],
-              ['📱', 'Contrôle des entrées par scan QR'],
-              ['📊', 'Suivi des ventes en temps réel']
-            ].map(([icon, text]) => (
-              <li key={text} className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 backdrop-blur">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-2xl">{icon}</span>
-                <span className="font-black text-white">{text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Faq() {
-  const items = [
-    {
-      q: 'Comment je paie mon billet ?',
-      a: 'Au checkout, choisis MonCash ou NatCash : tu reçois le numéro marchand et une référence (ex. TH-8F3K2A). Envoie le montant exact via ton application, en recopiant la référence dans la note du transfert. Notre équipe vérifie et confirme ton paiement.'
-    },
-    {
-      q: 'Comment je reçois mon billet ?',
-      a: 'Dès que ton paiement est confirmé, tes billets apparaissent dans la rubrique « Mes billets » avec un QR unique, et tu peux télécharger le PDF. Présente simplement ton QR à l’entrée.'
-    },
-    {
-      q: 'Combien de temps prend la confirmation ?',
-      a: 'En général quelques minutes pendant nos heures d’activité. Ta commande reste réservée pendant 2 heures : si le paiement n’est pas confirmé dans ce délai, elle est annulée et les places sont libérées.'
-    },
-    {
-      q: 'Faut-il un compte pour acheter ?',
-      a: 'Oui, un compte gratuit : il permet de retrouver tes billets, de suivre tes commandes et de recevoir tes confirmations. L’inscription prend moins d’une minute.'
-    },
-    {
-      q: 'Puis-je me faire rembourser ?',
-      a: 'Les conditions de remboursement dépendent de chaque organisateur et sont indiquées sur la page de l’événement. En cas d’annulation d’un événement, les billets sont remboursés.'
-    }
-  ];
-  const [open, setOpen] = useState<number | null>(0);
-  return (
-    <section className="container py-14 sm:py-20">
-      <p className="text-center text-xs font-black uppercase tracking-[0.25em] text-campy">FAQ</p>
-      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-black text-slate-900 sm:text-4xl md:text-5xl">
-        Une question ? On a la réponse.
-      </h2>
-      <div className="mx-auto mt-8 max-w-3xl space-y-4 sm:mt-10">
-        {items.map((item, i) => (
-          <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <button
-              onClick={() => setOpen(open === i ? null : i)}
-              className="flex w-full items-center justify-between gap-4 p-5 text-left font-black text-slate-900"
-            >
-              {item.q}
-              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition ${open === i ? 'bg-campy' : 'bg-slate-200 text-slate-600'}`}>
-                {open === i ? '−' : '+'}
-              </span>
-            </button>
-            {open === i && <p className="px-5 pb-5 leading-7 text-slate-600">{item.a}</p>}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CtaBanner() {
-  return (
-    <section className="container pb-14 sm:pb-20">
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-campy to-campyDark px-6 py-12 sm:px-8 md:px-14 md:py-14">
-        <Asterisk className="absolute right-10 top-8 text-5xl !text-white/40" />
-        <Dots className="absolute bottom-8 left-10 h-20 w-20 opacity-40" />
-        <div aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
-        <div className="relative max-w-2xl">
-          <h2 className="text-3xl font-black text-white sm:text-4xl md:text-5xl">
-            Prêt pour ta prochaine sortie ?
-          </h2>
-          <p className="mt-4 text-lg text-white/85">
-            Les meilleurs événements d’Haïti t’attendent. Ton billet est à trois clics.
-          </p>
           <Link
-            href="/events"
-            className="mt-8 inline-block rounded-full bg-white px-8 py-3.5 font-black text-campy shadow-lg transition hover:-translate-y-0.5"
+            href="/register"
+            className="rounded-full bg-white px-8 py-4 font-display text-[1rem] font-extrabold text-tike-ink shadow-lg transition hover:-translate-y-0.5"
           >
-            Trouver mon événement
+            Kreye evènman gratis
           </Link>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
 export default function Home() {
   return (
     <>
-      <style>{`
-        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        @keyframes float { 0%,100% { transform: translateY(0) rotate(3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
-        @keyframes floatSlow { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        .animate-marquee { animation: marquee 30s linear infinite; }
-        .animate-float { animation: float 5s ease-in-out infinite; }
-        .animate-float-slow { animation: floatSlow 6s ease-in-out infinite; }
-      `}</style>
       <Hero />
-      <Marquee />
-      <EventsShowcase />
-      <Categories />
-      <StatsBand />
-      <Features />
-      <HowItWorks />
-      <OrganizerCta />
-      <Faq />
-      <CtaBanner />
+      <CategoryPills />
+      <EventsGrid />
+      <How />
+      <div className="pb-14">
+        <Organizer />
+      </div>
     </>
   );
 }
