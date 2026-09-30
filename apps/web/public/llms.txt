@@ -1,0 +1,54 @@
+# Tikè Ayiti
+
+> Billetterie en ligne 100 % haïtienne : achetez des billets pour les plus beaux
+> événements d'Haïti, payez avec MonCash ou NatCash, recevez vos billets QR.
+
+## À propos
+
+- Nom : Tikè Ayiti
+- Site : https://tikeayiti.com
+- Description : plateforme haïtienne de billetterie événementielle (musique, culture, sports).
+- Langues du site : créole haïtien (principal), français.
+- Devise : gourde haïtienne (HTG).
+
+## Comment ça marche
+
+1. Créez un compte gratuit sur https://tikeayiti.com/register (ou connectez-vous : /login).
+2. Choisissez un événement sur https://tikeayiti.com/events et cliquez « Achte ».
+3. Payez par MonCash ou NatCash (paiement manuel : envoyez le montant au numéro
+   marchand affiché en indiquant la référence de commande TH-XXXXXX comme motif).
+4. Une fois le paiement confirmé par l'administrateur, vos billets QR apparaissent
+   dans « Tikè mwen » (/tickets). Les billets des événements gratuits sont immédiats.
+5. Présentez le QR à l'entrée ; chaque QR n'est valable qu'une seule fois (check-in unique).
+
+## Moyens de paiement
+
+- MonCash : +509 3642 5538
+- NatCash : +509 3584 5627
+- Aucune carte bancaire requise.
+
+## Règles importantes
+
+- Billets gratuits : maximum 4 par utilisateur et par événement (mesure anti-abus).
+- Une commande non payée (ou gratuite) peut être annulée depuis le compte client ;
+  les places sont alors libérées automatiquement.
+- Les billets sont liés au compte client et chaque QR ne peut être scanné qu'une fois.
+
+## Pages principales
+
+- Accueil : https://tikeayiti.com/
+- Événements : https://tikeayiti.com/events
+- Inscription : https://tikeayiti.com/register
+- Connexion : https://tikeayiti.com/login
+- Mes billets : https://tikeayiti.com/tickets (compte requis)
+- Plan du site : https://tikeayiti.com/sitemap.xml
+
+## Pour les organisateurs
+
+- Création d'événement gratuite, commission de 3 % seulement sur les ventes.
+- Suivi des ventes en direct, reversement sur MonCash ou NatCash.
+
+## Contact
+
+- Billets / support : tickets@tikeayiti.com
+- Administration : admin@tikeayiti.com

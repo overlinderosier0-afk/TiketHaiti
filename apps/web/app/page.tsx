@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Faq from '../components/Faq';
 import { api, uploadUrl } from '../lib/api';
 
 interface EventItem {
@@ -385,6 +386,7 @@ export default function Home() {
       <CategoryPills />
       <EventsGrid />
       <How />
+      <Faq />
       <div className="pb-14">
         <Organizer />
       </div>
