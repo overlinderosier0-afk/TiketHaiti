@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { serverApiBase, publicUploadUrl } from '../../lib/server';
 import CityFilter from './CityFilter';
+import SearchBox from './SearchBox';
 import CategoryFilter from './CategoryFilter';
 import { CategoryPill, EmptyState, ErrorBox, PageHead, StatusPill } from '../../components/ui';
 
@@ -47,10 +48,11 @@ function formatDate(iso: string): string {
   });
 }
 
-async function getEvents(city: string, category: string, page: number): Promise<PageResult> {
+async function getEvents(city: string, category: string, q: string, page: number): Promise<PageResult> {
   const params = new URLSearchParams({ status: 'PUBLISHED', page: String(page), limit: '12' });
   if (city) params.set('city', city);
   if (category) params.set('category', category);
+  if (q) params.set('q', q);
   // L'API exclut déjà les événements terminés par défaut.
   const res = await fetch(`${serverApiBase()}/events?${params.toString()}`, {
     next: { revalidate: 60 }
@@ -71,10 +73,11 @@ async function getCategories(): Promise<string[]> {
   }
 }
 
-function pageHref(city: string, category: string, page: number): string {
+function pageHref(city: string, category: string, q: string, page: number): string {
   const p = new URLSearchParams();
   if (city) p.set('city', city);
   if (category) p.set('category', category);
+  if (q) p.set('q', q);
   p.set('page', String(page));
   return `/events?${p.toString()}`;
 }
@@ -82,18 +85,19 @@ function pageHref(city: string, category: string, page: number): string {
 export default async function EventsPage({
   searchParams
 }: {
-  searchParams: Promise<{ city?: string; category?: string; page?: string }>;
+  searchParams: Promise<{ city?: string; category?: string; q?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const city = sp.city ?? '';
   const category = sp.category ?? '';
+  const q = sp.q ?? '';
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1);
 
   let data: PageResult | null = null;
   let categories: string[] = [];
   let error = '';
   try {
-    [data, categories] = await Promise.all([getEvents(city, category, page), getCategories()]);
+    [data, categories] = await Promise.all([getEvents(city, category, q, page), getCategories()]);
   } catch (e: any) {
     error = e?.message || 'Chargement impossible';
   }
@@ -108,6 +112,9 @@ export default async function EventsPage({
         />
         <Suspense>
           <CityFilter initial={city} />
+        </Suspense>
+        <Suspense>
+          <SearchBox initial={q} />
         </Suspense>
       </div>
 
@@ -166,8 +173,12 @@ export default async function EventsPage({
       {data && data.items.length === 0 && (
         <div className="mt-10">
           <EmptyState
-            title="Aucun événement à venir"
-            text="Essaie une autre ville, ou reviens bientôt : le catalogue s'agrandit."
+            title={q ? `Okenn rezilta pou « ${q} »` : 'Aucun événement à venir'}
+            text={
+              q
+                ? 'Eseye yon lòt mo, oubyen efase rechèch la pou wè tout evènman yo.'
+                : "Essaie une autre ville, ou reviens bientôt : le catalogue s'agrandit."
+            }
           />
         </div>
       )}
@@ -175,7 +186,7 @@ export default async function EventsPage({
       {data && data.totalPages > 1 && (
         <div className="mt-10 flex items-center justify-center gap-4">
           <Link
-            href={pageHref(city, category, page - 1)}
+            href={pageHref(city, category, q, page - 1)}
             aria-disabled={page <= 1}
             className={`rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 ${
               page <= 1 ? 'pointer-events-none opacity-40' : ''
@@ -187,7 +198,7 @@ export default async function EventsPage({
             Page {page} / {data.totalPages}
           </span>
           <Link
-            href={pageHref(city, category, page + 1)}
+            href={pageHref(city, category, q, page + 1)}
             aria-disabled={page >= data.totalPages}
             className={`rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 ${
               page >= data.totalPages ? 'pointer-events-none opacity-40' : ''

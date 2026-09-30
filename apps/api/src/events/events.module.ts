@@ -13,7 +13,8 @@ class EventsController {
     @Query('date') date?: string,
     @Query('past') past?: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
+    @Query('q') q?: string
   ) {
     const filters: any = { status: 'PUBLISHED' };
 
@@ -22,6 +23,17 @@ class EventsController {
     }
     if (category) {
       filters.category = { contains: category, mode: 'insensitive' };
+    }
+    // Recherche textuelle : titre, description, catégorie, artiste, ville.
+    if (q?.trim()) {
+      const qf = { contains: q.trim(), mode: 'insensitive' };
+      filters.OR = [
+        { title: qf },
+        { description: qf },
+        { category: qf },
+        { artistName: qf },
+        { city: { name: qf } }
+      ];
     }
     // Par défaut, seuls les événements à venir sont listés — les événements
     // terminés ne sont plus proposés à la vente. ?past=true pour les inclure.

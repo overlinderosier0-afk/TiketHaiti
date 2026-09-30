@@ -73,7 +73,8 @@ function SearchBar() {
       className="searchbar"
       onSubmit={(ev) => {
         ev.preventDefault();
-        router.push('/events');
+        const term = q.trim();
+        router.push(term ? `/events?q=${encodeURIComponent(term)}` : '/events');
       }}
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', opacity: 0.45 }}>
