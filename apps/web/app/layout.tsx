@@ -91,7 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 ))}
               </div>
               <p className="text-sm text-tike-muted">
-                © 2026 Tikè Ayiti — Fè ak fyète an Ayiti.
+                © 2026 Tikè Ayiti. Fè ak fyète an Ayiti.
               </p>
             </div>
           </footer>

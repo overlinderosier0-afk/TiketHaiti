@@ -153,7 +153,7 @@ function Hero() {
           </h1>
           <p className="mt-5 max-w-[480px] text-[1.12rem] leading-[1.65] text-tike-muted">
             Achte tikè pou pi bèl evènman Ayiti yo. Peye ak <b className="text-tike-ink">MonCash</b> oswa{' '}
-            <b className="text-tike-ink">NatCash</b>, jwenn tikè QR ou nan <b className="text-tike-ink">kont ou</b> — antre
+            <b className="text-tike-ink">NatCash</b>, jwenn tikè QR ou nan <b className="text-tike-ink">kont ou</b>, antre
             san traka.
           </p>
           <div className="mt-7">
