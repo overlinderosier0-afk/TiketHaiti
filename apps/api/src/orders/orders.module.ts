@@ -38,7 +38,7 @@ export class OrdersController {
       // compte peut réserver tout l'inventaire avec des commandes impayées
       // (les places sont décrémentées dès la création de la commande).
       // Seules les commandes non expirées comptent. Configurable via
-      // PENDING_TICKETS_PER_USER, défaut 20.
+      // PENDING_TICKETS_PER_USER, défaut 5.
       if (event.price > 0) {
         const maxPending = this.pendingTicketsPerUser();
         const pending = await tx.order.aggregate({
@@ -236,11 +236,11 @@ export class OrdersController {
   /**
    * Plafond de billets en attente de paiement par utilisateur et par
    * événement (anti-abus, événements payants). Configurable via
-   * PENDING_TICKETS_PER_USER, défaut 20.
+   * PENDING_TICKETS_PER_USER, défaut 5.
    */
   private pendingTicketsPerUser(): number {
-    const n = parseInt(process.env.PENDING_TICKETS_PER_USER || '20', 10);
-    return Number.isFinite(n) && n > 0 ? n : 20;
+    const n = parseInt(process.env.PENDING_TICKETS_PER_USER || '5', 10);
+    return Number.isFinite(n) && n > 0 ? n : 5;
   }
 
   /**
