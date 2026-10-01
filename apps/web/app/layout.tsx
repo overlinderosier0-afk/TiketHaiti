@@ -1,6 +1,7 @@
 import './globals.css';
 import Link from 'next/link';
 import AdminAwareNav from '../components/AdminAwareNav';
+import DevWarningBanner from '../components/DevWarningBanner';
 import { AuthProvider } from '../lib/auth';
 
 const SITE_URL = 'https://tikeayiti.com';
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="sticky top-0 z-50 border-b border-tike-violet/10 bg-tike-bg/85 backdrop-blur">
             <AdminAwareNav />
           </header>
+          <DevWarningBanner />
           <main>{children}</main>
           <footer className="border-t border-tike-violet/10 bg-white">
             <div className="container flex flex-wrap items-center justify-between gap-4 py-10">
