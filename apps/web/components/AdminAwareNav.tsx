@@ -96,8 +96,9 @@ export default function AdminAwareNav() {
                 <path d="M4 4l12 12M16 4L4 16" />
               </svg>
             ) : (
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <path d="M3 5h14M3 10h14M3 15h14" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
               </svg>
             )}
           </button>
@@ -131,6 +132,17 @@ export default function AdminAwareNav() {
                   className="flex-1 rounded-full bg-tike-violet px-4 py-3 text-center font-display text-sm font-extrabold text-white shadow-md hover:bg-tike-pink"
                 >
                   Kreye evènman
+                </Link>
+              </div>
+            )}
+            {!loading && user && (
+              <div className="mt-2 border-t border-tike-violet/10 px-4 pb-2 pt-4">
+                <Link
+                  href="/profile"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-full bg-tike-violet px-4 py-3 text-center font-display text-sm font-extrabold text-white shadow-md hover:bg-tike-pink"
+                >
+                  Pwofil mwen
                 </Link>
               </div>
             )}
