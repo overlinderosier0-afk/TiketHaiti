@@ -32,7 +32,7 @@ export const metadata = {
 
 function LogoMark() {
   return (
-    <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-gradient-to-br from-tike-violet via-tike-pink to-tike-amber shadow-lg">
+    <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-tike-violet shadow-lg">
       <svg
         width="22"
         height="22"

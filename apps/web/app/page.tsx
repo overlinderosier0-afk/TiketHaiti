@@ -47,9 +47,9 @@ function fmtPrice(p: number): React.ReactNode {
 
 const POSTER_GRADIENTS = [
   'linear-gradient(135deg,#2F5BFF,#1E3FAE)',
-  'linear-gradient(135deg,#1E3FAE,#F4B942)',
   'linear-gradient(135deg,#3B82F6,#2F5BFF)',
-  'linear-gradient(135deg,#F4B942,#1E3FAE)'
+  'linear-gradient(135deg,#1E3FAE,#0B2B8F)',
+  'linear-gradient(135deg,#5B8CFF,#2F5BFF)'
 ];
 
 function Poster({ e, i, h }: { e: EventItem; i: number; h: string }) {
@@ -91,7 +91,7 @@ function SearchBar() {
       />
       <button
         type="submit"
-        className="rounded-full bg-gradient-to-r from-tike-violet via-tike-pink to-tike-amber px-7 py-3 font-display text-[0.95rem] font-extrabold text-white shadow-lg transition hover:-translate-y-0.5"
+        className="rounded-full bg-tike-violet px-7 py-3 font-display text-[0.95rem] font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-tike-pink"
       >
         Chèche
       </button>
@@ -140,7 +140,7 @@ function Hero() {
     <header className="relative overflow-hidden">
       <div aria-hidden className="blob" style={{ width: 480, height: 480, background: '#D7E3FF', top: -140, left: -120 }} />
       <div aria-hidden className="blob" style={{ width: 420, height: 420, background: '#E4EBFF', top: 40, right: -120 }} />
-      <div aria-hidden className="blob" style={{ width: 300, height: 300, background: '#FDEECD', bottom: -120, left: '38%' }} />
+      <div aria-hidden className="blob" style={{ width: 300, height: 300, background: '#DCE7FF', bottom: -120, left: '38%' }} />
       <div className="container relative grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-20">
         <div>
           <span className="kicker">
@@ -286,7 +286,7 @@ function EventsGrid() {
                     <span className="font-display font-black text-tike-ink">{fmtPrice(e.price)}</span>
                     <Link
                       href={`/events/${e.slug || e.id}`}
-                      className="rounded-full bg-gradient-to-r from-tike-violet via-tike-pink to-tike-amber px-5 py-2 font-display text-[0.85rem] font-extrabold text-white transition hover:-translate-y-0.5"
+                      className="rounded-full bg-tike-violet px-5 py-2 font-display text-[0.85rem] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-tike-pink"
                     >
                       Achte
                     </Link>
@@ -332,7 +332,7 @@ function How() {
         <div className="grid gap-7 md:grid-cols-3">
           {steps.map((s) => (
             <div key={s.n} className="p-2.5 text-center">
-              <div className="tike-grad-text mx-auto mb-[18px] grid h-16 w-16 place-items-center rounded-[22px] border-[1.5px] border-tike-violet/15 font-display text-[1.4rem] font-black">
+              <div className="mx-auto mb-[18px] grid h-16 w-16 place-items-center rounded-[22px] bg-tike-violet font-display text-[1.4rem] font-black text-white shadow-[0_14px_28px_-14px_rgba(47,91,255,0.6)]">
                 {s.n}
               </div>
               <h3 className="mb-2 font-display text-[1.1rem] font-extrabold text-tike-ink">{s.title}</h3>
@@ -352,7 +352,7 @@ function Organizer() {
     <div className="container py-5">
       <div
         id="organizateur"
-        className="relative scroll-mt-24 overflow-hidden rounded-[36px] bg-gradient-to-br from-tike-violet via-tike-pink to-tike-amber p-10 text-white sm:p-14"
+        className="relative scroll-mt-24 overflow-hidden rounded-[36px] bg-gradient-to-br from-tike-violet to-tike-pink p-10 text-white sm:p-14"
       >
         <div aria-hidden className="absolute -right-[100px] -top-[160px] h-[420px] w-[420px] rounded-full bg-white/15" />
         <div aria-hidden className="absolute -bottom-[120px] left-[20%] h-[260px] w-[260px] rounded-full bg-white/10" />

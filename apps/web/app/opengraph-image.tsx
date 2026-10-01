@@ -29,7 +29,7 @@ export default function OgImage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'linear-gradient(135deg, #2F5BFF, #1E3FAE 60%, #F4B942 130%)',
+              background: 'linear-gradient(135deg, #2F5BFF, #1E3FAE)',
               fontSize: 52
             }}
           >

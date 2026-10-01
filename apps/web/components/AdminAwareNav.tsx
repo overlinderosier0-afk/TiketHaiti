@@ -6,7 +6,7 @@ import { useAuth } from '../lib/auth';
 
 function LogoMark() {
   return (
-    <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-gradient-to-br from-tike-violet via-tike-pink to-tike-amber shadow-lg">
+    <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-tike-violet shadow-lg">
       <svg
         width="22"
         height="22"
@@ -79,7 +79,7 @@ export default function AdminAwareNav() {
               </Link>
               <Link
                 href="/register"
-                className="hidden rounded-full bg-gradient-to-r from-tike-violet via-tike-pink to-tike-amber px-6 py-3 font-display text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 sm:block"
+                className="hidden rounded-full bg-tike-violet px-6 py-3 font-display text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-tike-pink sm:block"
               >
                 Kreye evènman
               </Link>
@@ -128,7 +128,7 @@ export default function AdminAwareNav() {
                 <Link
                   href="/register"
                   onClick={() => setOpen(false)}
-                  className="flex-1 rounded-full bg-gradient-to-r from-tike-violet via-tike-pink to-tike-amber px-4 py-3 text-center font-display text-sm font-extrabold text-white shadow-md"
+                  className="flex-1 rounded-full bg-tike-violet px-4 py-3 text-center font-display text-sm font-extrabold text-white shadow-md hover:bg-tike-pink"
                 >
                   Kreye evènman
                 </Link>

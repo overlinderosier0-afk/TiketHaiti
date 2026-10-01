@@ -11,7 +11,7 @@
 
 body {
   color: #0f172a;
-  background: #f8f9fd;
+  background: #f7faff;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -50,16 +50,48 @@ body {
   animation: bob 3s ease-in-out infinite;
 }
 
-/* ================= Thème v2 "sunset" (page d'accueil) ================= */
+/* ================= Thème v3 "bleu corporate" (page d'accueil) ================= */
 
 .tike-grad-text {
-  background: linear-gradient(120deg, #2f5bff 0%, #1e3fae 48%, #f4b942 100%);
+  background: linear-gradient(120deg, #2f5bff 0%, #1e3fae 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .tike-grad-bg {
-  background: linear-gradient(120deg, #2f5bff 0%, #1e3fae 48%, #f4b942 100%);
+  background: linear-gradient(120deg, #2f5bff 0%, #1e3fae 100%);
+}
+
+/* Boutons (classes utilisées par les pages d'erreur / 404) */
+.btn-tike {
+  display: inline-block;
+  border-radius: 999px;
+  background: #2f5bff;
+  color: #fff;
+  font-family: Nunito, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  padding: 12px 28px;
+  box-shadow: 0 14px 28px -14px rgba(47, 91, 255, 0.55);
+  transition: transform 0.15s, background 0.15s;
+}
+.btn-tike:hover {
+  background: #1e3fae;
+  transform: translateY(-2px);
+}
+.btn-tike-ghost {
+  display: inline-block;
+  border-radius: 999px;
+  background: transparent;
+  color: #2f5bff;
+  font-family: Nunito, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  padding: 12px 28px;
+  border: 1.5px solid rgba(47, 91, 255, 0.35);
+  transition: transform 0.15s, border-color 0.15s;
+}
+.btn-tike-ghost:hover {
+  border-color: #2f5bff;
+  transform: translateY(-2px);
 }
 
 .blob {
@@ -75,14 +107,14 @@ body {
   align-items: center;
   gap: 8px;
   background: #fff;
-  border: 1.5px solid rgba(124, 58, 237, 0.14);
+  border: 1.5px solid rgba(47, 91, 255, 0.14);
   padding: 8px 16px;
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 700;
   color: #2f5bff;
   margin-bottom: 22px;
-  box-shadow: 0 6px 16px -8px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 6px 16px -8px rgba(47, 91, 255, 0.25);
 }
 .kicker i {
   width: 8px;
@@ -103,8 +135,8 @@ body {
   background: #fff;
   border-radius: 999px;
   padding: 8px 8px 8px 22px;
-  box-shadow: 0 20px 45px -18px rgba(124, 58, 237, 0.22);
-  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 20px 45px -18px rgba(47, 91, 255, 0.22);
+  border: 1px solid rgba(47, 91, 255, 0.1);
   max-width: 540px;
 }
 .searchbar input {
@@ -150,10 +182,10 @@ body {
   position: absolute;
   background: #fff;
   border-radius: 22px;
-  box-shadow: 0 20px 45px -18px rgba(124, 58, 237, 0.22);
+  box-shadow: 0 20px 45px -18px rgba(47, 91, 255, 0.22);
   padding: 20px;
   width: 290px;
-  border: 1px solid rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(47, 91, 255, 0.08);
 }
 .ticket .poster {
   height: 120px;
@@ -178,7 +210,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 2px dashed rgba(124, 58, 237, 0.18);
+  border-top: 2px dashed rgba(47, 91, 255, 0.18);
   padding-top: 12px;
 }
 .ticket .price {
@@ -213,11 +245,11 @@ body {
   padding: 10px 18px;
   font-size: 0.82rem;
   font-weight: 800;
-  box-shadow: 0 20px 45px -18px rgba(124, 58, 237, 0.22);
+  box-shadow: 0 20px 45px -18px rgba(47, 91, 255, 0.22);
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(47, 91, 255, 0.08);
 }
 .fb-1 { top: 0; right: 60px; animation: tike-float 5s ease-in-out infinite; }
 .fb-2 { bottom: 40px; left: 0; animation: tike-float 6s ease-in-out infinite reverse; }
@@ -233,7 +265,7 @@ body {
   align-items: center;
   gap: 10px;
   background: #fff;
-  border: 1.5px solid rgba(124, 58, 237, 0.12);
+  border: 1.5px solid rgba(47, 91, 255, 0.12);
   border-radius: 999px;
   padding: 11px 20px;
   font-family: Nunito, sans-serif;
@@ -249,9 +281,9 @@ body {
   transform: translateY(-2px);
 }
 .cat.active {
-  background: #0f172a;
+  background: #2f5bff;
   color: #fff;
-  border-color: #0f172a;
+  border-color: #2f5bff;
 }
 .cat .emoji-ic {
   width: 30px;
@@ -260,7 +292,7 @@ body {
   display: grid;
   place-items: center;
   font-size: 1rem;
-  background: linear-gradient(120deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.1), rgba(245, 158, 11, 0.12));
+  background: linear-gradient(120deg, rgba(47, 91, 255, 0.12), rgba(30, 63, 174, 0.12));
 }
 
 @media (max-width: 960px) {

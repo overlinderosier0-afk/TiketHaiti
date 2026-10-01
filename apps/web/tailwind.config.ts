@@ -10,10 +10,10 @@ export default {
         campy: '#2f5bff',
         campyDark: '#1e3fae',
         cream: '#fff9f1',
-        // Thème v2 : mise en page de la maquette, mais palette d'origine
-        // (bleu campy #2F5BFF, bleu foncé #1E3FAE, ambre sun #F4B942).
+        // Thème v3 "bleu corporate" : bleu roi #2F5BFF + blanc/bleu très clair,
+        // fini l'ambre/doré dans l'interface publique.
         tike: {
-          bg: '#FFF9F1',
+          bg: '#F7FAFF',
           ink: '#0F172A',
           muted: '#64748B',
           violet: '#2F5BFF',
