@@ -33,6 +33,33 @@ export class OrdersController {
         throw new BadRequestException('Cet événement est déjà terminé');
       }
 
+      // Anti-abus (événements payants) : plafond de billets « en attente de
+      // paiement » par utilisateur et par événement. Sans ça, un seul
+      // compte peut réserver tout l'inventaire avec des commandes impayées
+      // (les places sont décrémentées dès la création de la commande).
+      // Seules les commandes non expirées comptent. Configurable via
+      // PENDING_TICKETS_PER_USER, défaut 20.
+      if (event.price > 0) {
+        const maxPending = this.pendingTicketsPerUser();
+        const pending = await tx.order.aggregate({
+          where: {
+            userId: req.user.sub,
+            eventId: dto.eventId,
+            paymentStatus: 'PENDING',
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          _sum: { quantity: true },
+        });
+        const held = pending._sum.quantity ?? 0;
+        if (held + dto.quantity > maxPending) {
+          throw new BadRequestException(
+            `Limite de ${maxPending} billet(s) en attente de paiement par personne pour cet événement` +
+              (held > 0 ? ` (tu en as déjà ${held} en attente)` : '') +
+              '. Termine ou annule tes commandes en cours avant d\u2019en créer une nouvelle.'
+          );
+        }
+      }
+
       // Décrément atomique et conditionnel : une seule requête réserve les
       // places, donc deux achats simultanés ne peuvent pas vendre plus que
       // la capacité (pas de survente en cas de requêtes concurrentes).
@@ -204,6 +231,16 @@ export class OrdersController {
   private freeTicketsPerUser(): number {
     const n = parseInt(process.env.FREE_TICKETS_PER_USER || '4', 10);
     return Number.isFinite(n) && n > 0 ? n : 4;
+  }
+
+  /**
+   * Plafond de billets en attente de paiement par utilisateur et par
+   * événement (anti-abus, événements payants). Configurable via
+   * PENDING_TICKETS_PER_USER, défaut 20.
+   */
+  private pendingTicketsPerUser(): number {
+    const n = parseInt(process.env.PENDING_TICKETS_PER_USER || '20', 10);
+    return Number.isFinite(n) && n > 0 ? n : 20;
   }
 
   /**
