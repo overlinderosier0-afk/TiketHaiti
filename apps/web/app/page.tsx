@@ -1,10 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Faq from '../components/Faq';
-import { api, uploadUrl } from '../lib/api';
+import { api } from '../lib/api';
 
 interface EventItem {
   id: string;
@@ -22,374 +20,311 @@ interface PageResult {
   total: number;
 }
 
-/* ---------- Utilitaires ---------- */
+/*
+ * Numéros marchands affichés sur la landing.
+ * Source de vérité : MERCHANT_MONCASH_NUMBER / MERCHANT_NATCASH_NUMBER dans le .env de l'API.
+ * Si tu changes les numéros côté API, mets à jour ces deux constantes.
+ */
+const MONCASH_NUMBER = '+509 3642 5538';
+const NATCASH_NUMBER = '+509 3584 5627';
 
-const MONTHS_HT = ['Jan', 'Fev', 'Mas', 'Avr', 'Me', 'Jen', 'Jiy', 'Out', 'Sep', 'Okt', 'Nov', 'Des'];
+const MOIS_COURT = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
 
-function dateBadge(iso: string): { day: number; mon: string } {
+function fmtDate(iso: string): { jour: string; mois: string; annee: string } {
   const d = new Date(iso);
-  return { day: d.getDate(), mon: MONTHS_HT[d.getMonth()] ?? '' };
+  return {
+    jour: String(d.getDate()),
+    mois: MOIS_COURT[d.getMonth()] ?? '',
+    annee: String(d.getFullYear())
+  };
 }
 
-function shortMeta(e: EventItem): string {
-  const d = new Date(e.eventDate);
-  return `${e.city?.name ?? ''} · ${d.getDate()} ${MONTHS_HT[d.getMonth()] ?? ''}`.trim();
+function fmtPrice(p: number): string {
+  if (p <= 0) return 'Gratuit';
+  return `${p.toLocaleString('fr-FR')} HTG`;
 }
 
-function fmtPrice(p: number): React.ReactNode {
-  if (p <= 0) return <>Gratis</>;
+function eventHref(e: EventItem): string {
+  return `/events/${e.slug || e.id}`;
+}
+
+function nextEvent(items: EventItem[]): EventItem | null {
+  if (!items.length) return null;
+  const now = Date.now();
+  const upcoming = items
+    .filter((e) => new Date(e.eventDate).getTime() >= now - 24 * 3600 * 1000)
+    .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+  return upcoming[0] ?? items[0];
+}
+
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [done, setDone] = useState(false);
   return (
-    <>
-      {p.toLocaleString('fr-FR')} <small>HTG</small>
-    </>
-  );
-}
-
-const POSTER_GRADIENTS = [
-  'linear-gradient(135deg,#2F5BFF,#1E3FAE)',
-  'linear-gradient(135deg,#3B82F6,#2F5BFF)',
-  'linear-gradient(135deg,#1E3FAE,#0B2B8F)',
-  'linear-gradient(135deg,#5B8CFF,#2F5BFF)'
-];
-
-function Poster({ e, i, h }: { e: EventItem; i: number; h: string }) {
-  const url = uploadUrl(e.bannerUrl);
-  if (url) {
-    return (
-      <div className="poster" style={{ height: h }}>
-        <img src={url} alt={e.title} className="h-full w-full object-cover" />
-      </div>
-    );
-  }
-  return <div className="poster" style={{ height: h, background: POSTER_GRADIENTS[i % POSTER_GRADIENTS.length] }} />;
-}
-
-/* ---------- Hero ---------- */
-
-function SearchBar() {
-  const router = useRouter();
-  const [q, setQ] = useState('');
-  return (
-    <form
-      className="searchbar"
-      onSubmit={(ev) => {
-        ev.preventDefault();
-        const term = q.trim();
-        router.push(term ? `/events?q=${encodeURIComponent(term)}` : '/events');
+    <button
+      type="button"
+      aria-label={`Copier ${label}`}
+      onClick={() => {
+        const finish = () => {
+          setDone(true);
+          setTimeout(() => setDone(false), 1600);
+        };
+        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(finish).catch(finish);
+        else finish();
       }}
+      className="ml-3 inline-flex items-center border-2 border-ed-ink bg-ed-paper px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-ed-ink transition hover:bg-ed-ink hover:text-ed-paper"
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', opacity: 0.45 }}>
-        <circle cx="11" cy="11" r="7" />
-        <path d="M20 20l-3.5-3.5" />
-      </svg>
-      <input
-        type="text"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Chèche yon evènman, yon atis, yon vil…"
-        aria-label="Chèche yon evènman"
-      />
-      <button
-        type="submit"
-        className="rounded-full bg-tike-violet px-7 py-3 font-display text-[0.95rem] font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-tike-pink"
-      >
-        Chèche
-      </button>
-    </form>
+      {done ? 'Copié' : 'Copier'}
+    </button>
   );
 }
 
-const TICKET_CLASSES = ['t1', 't2', 't3'];
+/* ---------------- Hero ---------------- */
 
-function HeroTickets() {
-  const [events, setEvents] = useState<EventItem[] | null>(null);
-  useEffect(() => {
-    api<PageResult>('/events?limit=3')
-      .then((r) => setEvents(r.items))
-      .catch(() => setEvents([]));
-  }, []);
-
+function Hero({ events }: { events: EventItem[] | null }) {
+  const headliner = events ? nextEvent(events) : null;
+  const d = headliner ? fmtDate(headliner.eventDate) : null;
   return (
-    <div className="relative mx-auto h-[440px] w-full max-w-[480px]">
-      {(events ?? []).slice(0, 3).map((e, i) => (
-        <Link key={e.id} href={`/events/${e.slug || e.id}`} className={`ticket ${TICKET_CLASSES[i]}`}>
-          <Poster e={e} i={i} h="120px" />
-          <h3 className="line-clamp-1">{e.title}</h3>
-          <div className="meta">{shortMeta(e)}</div>
-          <div className="row">
-            <span className="price">{fmtPrice(e.price)}</span>
-            <span className="qr">QR</span>
-          </div>
-        </Link>
-      ))}
-      {events !== null && events.length === 0 && (
-        <div className="grid h-full place-items-center rounded-[28px] border border-dashed border-tike-violet/25 bg-white/60 p-8 text-center">
-          <p className="font-bold text-tike-muted">
-            Evènman k ap vini yo ap parèt isit la.
-          </p>
-        </div>
-      )}
-      <span className="float-badge fb-1">⚡ MonCash & NatCash</span>
-      <span className="float-badge fb-2">✓ Tikè QR ou nan kont ou</span>
-    </div>
-  );
-}
-
-function Hero() {
-  return (
-    <header className="relative overflow-hidden">
-      <div aria-hidden className="blob" style={{ width: 480, height: 480, background: '#D7E3FF', top: -140, left: -120 }} />
-      <div aria-hidden className="blob" style={{ width: 420, height: 420, background: '#E4EBFF', top: 40, right: -120 }} />
-      <div aria-hidden className="blob" style={{ width: 300, height: 300, background: '#DCE7FF', bottom: -120, left: '38%' }} />
-      <div className="container relative grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-20">
-        <div>
-          <span className="kicker">
-            <i /> Billetterie 100% ayisyèn
-          </span>
-          <h1 className="font-display text-[clamp(2.4rem,5vw,3.9rem)] font-black leading-[1.06] tracking-tight text-tike-ink">
-            Tikè ou,
-            <br />
-            <span className="tike-grad-text">nan poch ou.</span>
-          </h1>
-          <p className="mt-5 max-w-[480px] text-[1.12rem] leading-[1.65] text-tike-muted">
-            Achte tikè pou pi bèl evènman Ayiti yo. Peye ak <b className="text-tike-ink">MonCash</b> oswa{' '}
-            <b className="text-tike-ink">NatCash</b>, jwenn tikè QR ou nan <b className="text-tike-ink">kont ou</b>, antre
-            san traka.
-          </p>
-          <div className="mt-7">
-            <SearchBar />
-          </div>
-          <div className="trust">
-            <div><span className="dot">✓</span> Peman sekirize</div>
-            <div><span className="dot">✓</span> QR imedyat</div>
-            <div><span className="dot">✓</span> San aplikasyon</div>
-          </div>
-        </div>
-        <HeroTickets />
-      </div>
-    </header>
-  );
-}
-
-/* ---------- Catégories ---------- */
-
-function CategoryPills() {
-  const [cats, setCats] = useState<string[]>([]);
-  useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    fetch(`${base}/events/categories`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((list) => Array.isArray(list) && setCats(list))
-      .catch(() => {});
-  }, []);
-  if (cats.length === 0) return null;
-  return (
-    <div className="container py-6">
-      <div className="flex gap-3 overflow-x-auto pb-3" style={{ scrollbarWidth: 'none' }}>
-        <Link href="/events" className="cat active">
-          <span className="emoji-ic">✦</span> Tout
-        </Link>
-        {cats.map((c) => (
-          <Link key={c} href={`/events?category=${encodeURIComponent(c)}`} className="cat">
-            <span className="emoji-ic">✦</span> {c}
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Événements ---------- */
-
-function EventsGrid() {
-  const [data, setData] = useState<PageResult | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    api<PageResult>('/events?limit=4')
-      .then(setData)
-      .catch(() => setFailed(true));
-  }, []);
-
-  return (
-    <section className="container py-14">
-      <div className="mb-7 flex items-end justify-between">
-        <div>
-          <h2 className="font-display text-[1.9rem] font-black tracking-tight text-tike-ink">
-            Evènman k ap vini
-          </h2>
-          <p className="mt-1.5 text-tike-muted">Pi bèl sware yo, yon klik lwen.</p>
-        </div>
-        <Link href="/events" className="font-bold text-tike-violet">
-          Wè tout →
-        </Link>
-      </div>
-
-      {!data && !failed && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse rounded-[28px] bg-white p-5 shadow">
-              <div className="h-40 rounded-2xl bg-tike-violet/10" />
-              <div className="mt-4 h-4 w-3/4 rounded bg-slate-100" />
-              <div className="mt-2 h-4 w-1/2 rounded bg-slate-100" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {failed && (
-        <p className="rounded-[28px] bg-white p-6 text-center font-bold text-tike-muted shadow">
-          Nou pa ka chaje evènman yo pou kounye a.{' '}
-          <Link href="/events" className="text-tike-violet">Wè lis konplè a →</Link>
-        </p>
-      )}
-
-      {data && data.items.length === 0 && (
-        <p className="rounded-[28px] bg-white p-6 text-center font-bold text-tike-muted shadow">
-          Okenn evènman pibliye pou kounye a. Tounen byento !
-        </p>
-      )}
-
-      {data && data.items.length > 0 && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {data.items.map((e, i) => {
-            const b = dateBadge(e.eventDate);
-            return (
-              <article
-                key={e.id}
-                className="group overflow-hidden rounded-[28px] border border-tike-violet/10 bg-white shadow-[0_14px_30px_-20px_rgba(15,23,42,0.25)] transition hover:-translate-y-1.5 hover:shadow-tike"
+    <section className="border-b-2 border-ed-ink">
+      <div className="container py-14 md:py-20">
+        <p className="ed-kicker">La billetterie d&apos;Haïti · Cap-Haïtien</p>
+        <h1 className="mt-5 font-black uppercase leading-[0.95] tracking-tight text-ed-ink text-[clamp(3rem,9vw,7.5rem)]">
+          Le konpa
+          <br />
+          <span className="ed-outline">t&apos;attend.</span>
+        </h1>
+        <div className="mt-10 grid gap-10 md:grid-cols-[1fr_360px] md:items-start">
+          <div>
+            <p className="max-w-[46ch] text-lg text-ed-muted">
+              TikeAyiti vend les billets des concerts et festivals d&apos;Haïti. Tu paies par MonCash
+              ou NatCash, ton billet QR arrive par email. Sans carte bancaire, sans complication.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-4">
+              <Link
+                href="/events"
+                className="bg-ed-red px-8 py-4 text-sm font-extrabold uppercase tracking-widest text-white transition hover:bg-ed-ink"
               >
-                <div className="relative h-[170px] overflow-hidden">
-                  {uploadUrl(e.bannerUrl) ? (
-                    <img
-                      src={uploadUrl(e.bannerUrl)!}
-                      alt={e.title}
-                      className="h-full w-full object-cover transition group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="h-full w-full" style={{ background: POSTER_GRADIENTS[i % POSTER_GRADIENTS.length] }} />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[rgba(15,23,42,0.45)]" />
-                  <div className="absolute left-3.5 top-3.5 z-[2] rounded-[14px] bg-white/95 px-3 py-1.5 text-center shadow">
-                    <b className="block font-display text-[1.05rem] font-black leading-none text-tike-ink">{b.day}</b>
-                    <span className="text-[0.68rem] font-bold uppercase tracking-wider text-tike-violet">{b.mon}</span>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <div className="mb-1.5 text-[0.8rem] font-semibold text-tike-muted">
-                    {e.city?.name ?? ''}
-                  </div>
-                  <h3 className="line-clamp-2 font-display text-[1.04rem] font-extrabold leading-snug text-tike-ink">
-                    {e.title}
-                  </h3>
-                  <div className="mt-3.5 flex items-center justify-between border-t-2 border-dashed border-tike-violet/15 pt-3.5">
-                    <span className="font-display font-black text-tike-ink">{fmtPrice(e.price)}</span>
-                    <Link
-                      href={`/events/${e.slug || e.id}`}
-                      className="rounded-full bg-tike-violet px-5 py-2 font-display text-[0.85rem] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-tike-pink"
-                    >
-                      Achte
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+                Voir les événements
+              </Link>
+              <Link
+                href="#comment-ca-marche"
+                className="border-2 border-ed-ink px-8 py-4 text-sm font-extrabold uppercase tracking-widest text-ed-ink transition hover:bg-ed-ink hover:text-ed-paper"
+              >
+                Comment ça marche
+              </Link>
+            </div>
+          </div>
+          <aside aria-label="Prochain événement" className="border-2 border-ed-ink bg-white">
+            <div className="border-b-2 border-dashed border-ed-ink p-5">
+              <p className="ed-kicker">Prochain événement</p>
+              {headliner && d ? (
+                <>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-ed-ink">{headliner.title}</h2>
+                  <p className="mt-1 text-sm text-ed-muted">
+                    {d.jour} {d.mois} {d.annee} · {headliner.city?.name ?? ''}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-ed-muted">Chargement…</p>
+              )}
+            </div>
+            <div className="flex items-center justify-between p-5">
+              <span className="text-xl font-black text-ed-ink">{headliner ? fmtPrice(headliner.price) : '…'}</span>
+              {headliner && (
+                <Link
+                  href={eventHref(headliner)}
+                  className="bg-ed-ink px-5 py-2.5 text-xs font-extrabold uppercase tracking-widest text-ed-paper transition hover:bg-ed-red"
+                >
+                  Acheter
+                </Link>
+              )}
+            </div>
+          </aside>
         </div>
-      )}
+      </div>
     </section>
   );
 }
 
-/* ---------- Kijan li mache ---------- */
+/* ---------------- Agenda ---------------- */
 
-function How() {
-  const steps = [
-    {
-      n: '1',
-      title: 'Chwazi evènman ou',
-      text: <>Chèche pa vil, pa dat oswa pa kategori. <b className="text-tike-ink">Chwazi plas ou</b> an kèk segonn.</>
-    },
-    {
-      n: '2',
-      title: 'Peye fasil',
-      text: <><b className="text-tike-ink">MonCash</b> oswa <b className="text-tike-ink">NatCash</b>, dirèkteman sou telefòn ou. San kat labank.</>
-    },
-    {
-      n: '3',
-      title: 'Antre ak QR ou',
-      text: <>Jwenn tikè QR ou nan <b className="text-tike-ink">kont ou</b> apre peman an konfime. Montre QR la nan pòt la.</>
-    }
-  ];
+function Agenda({ events }: { events: EventItem[] | null }) {
   return (
-    <div className="container py-5">
-      <div
-        id="kijan-li-mache"
-        className="scroll-mt-24 rounded-[36px] border border-tike-violet/10 bg-white px-6 py-14 shadow-[0_24px_50px_-30px_rgba(47,91,255,0.25)] sm:px-12"
-      >
-        <h2 className="text-center font-display text-[1.9rem] font-black text-tike-ink">Kijan li mache</h2>
-        <p className="mb-10 mt-2 text-center text-tike-muted">Twa etap, epi w ap danse.</p>
-        <div className="grid gap-7 md:grid-cols-3">
-          {steps.map((s) => (
-            <div key={s.n} className="p-2.5 text-center">
-              <div className="mx-auto mb-[18px] grid h-16 w-16 place-items-center rounded-[22px] bg-tike-violet font-display text-[1.4rem] font-black text-white shadow-[0_14px_28px_-14px_rgba(47,91,255,0.6)]">
-                {s.n}
-              </div>
-              <h3 className="mb-2 font-display text-[1.1rem] font-extrabold text-tike-ink">{s.title}</h3>
-              <p className="text-[0.94rem] leading-[1.6] text-tike-muted">{s.text}</p>
-            </div>
-          ))}
-        </div>
+    <section id="agenda" className="container scroll-mt-24 py-14 md:py-16">
+      <h2 className="text-[clamp(2rem,4.5vw,3.5rem)] font-black uppercase tracking-tight text-ed-ink">
+        L&apos;agenda
+      </h2>
+      <p className="mt-2 text-ed-muted">Toutes les dates, un seul endroit. Prix affichés en gourdes.</p>
+      <div className="mt-8">
+        {events === null && <p className="py-8 text-ed-muted">Chargement des événements…</p>}
+        {events && events.length === 0 && (
+          <div className="border-2 border-dashed border-ed-rule p-10 text-center">
+            <p className="font-bold text-ed-muted">
+              Aucun événement pour le moment. Reviens bientôt, la scène ne dort jamais longtemps.
+            </p>
+            <Link
+              href="/events"
+              className="mt-5 inline-block bg-ed-ink px-6 py-3 text-xs font-extrabold uppercase tracking-widest text-ed-paper transition hover:bg-ed-red"
+            >
+              Voir tous les événements
+            </Link>
+          </div>
+        )}
+        {events &&
+          events.map((e) => {
+            const d = fmtDate(e.eventDate);
+            const soon =
+              new Date(e.eventDate).getTime() - Date.now() < 14 * 24 * 3600 * 1000 &&
+              new Date(e.eventDate).getTime() >= Date.now();
+            return (
+              <Link
+                key={e.id}
+                href={eventHref(e)}
+                className="group grid grid-cols-[86px_1fr_auto] items-center gap-4 border-t border-ed-rule px-1 py-5 transition last:border-b hover:bg-[#f3ecdd] md:grid-cols-[110px_1fr_auto_auto] md:gap-6"
+              >
+                <div className="font-black uppercase leading-tight text-ed-ink">
+                  <span className="block text-base">
+                    {d.jour} {d.mois}
+                  </span>
+                  <span className="block text-xs text-ed-red">{d.annee}</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-extrabold tracking-tight text-ed-ink group-hover:text-ed-red md:text-2xl">
+                    {e.title}
+                  </h3>
+                  <p className="text-sm text-ed-muted">{e.city?.name ?? ''}</p>
+                </div>
+                <span
+                  className={`hidden border-[1.5px] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-widest md:inline-block ${
+                    soon ? 'border-ed-red bg-ed-red text-white' : 'border-ed-ink text-ed-ink'
+                  }`}
+                >
+                  {soon ? 'Bientôt' : 'En vente'}
+                </span>
+                <span className="whitespace-nowrap text-lg font-black text-ed-ink">{fmtPrice(e.price)}</span>
+              </Link>
+            );
+          })}
       </div>
-    </div>
+    </section>
   );
 }
 
-/* ---------- Organisateurs ---------- */
+/* ---------------- Manifeste ---------------- */
 
-function Organizer() {
+function Manifesto() {
   return (
-    <div className="container py-5">
-      <div
-        id="organizateur"
-        className="relative scroll-mt-24 overflow-hidden rounded-[36px] bg-gradient-to-br from-tike-violet to-tike-pink p-10 text-white sm:p-14"
-      >
-        <div aria-hidden className="absolute -right-[100px] -top-[160px] h-[420px] w-[420px] rounded-full bg-white/15" />
-        <div aria-hidden className="absolute -bottom-[120px] left-[20%] h-[260px] w-[260px] rounded-full bg-white/10" />
-        <div className="relative flex flex-wrap items-center justify-between gap-8">
-          <div>
-            <span className="mb-[18px] inline-block rounded-full bg-white/20 px-[18px] py-2 text-[0.85rem] font-extrabold">
-              Komisyon 3% sèlman
+    <section className="bg-ed-ink py-14 text-ed-paper md:py-16">
+      <div className="container">
+        <p className="max-w-[38ch] text-[clamp(1.4rem,3.2vw,2.4rem)] font-extrabold leading-snug tracking-tight">
+          Fini les billets perdus et les longues files.{' '}
+          <span className="text-ed-red">Ton billet vit dans ton téléphone</span>, ton paiement passe
+          par ton mobile money, et la fête commence à l&apos;heure.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Comment ça marche ---------------- */
+
+const STEPS = [
+  {
+    n: '01',
+    title: 'Tu choisis',
+    text: 'Sélectionne ton événement et tes billets. Une référence TH-XXXXXX est créée pour ta commande.'
+  },
+  {
+    n: '02',
+    title: 'Tu paies par mobile',
+    text: 'Envoie le montant exact via MonCash ou NatCash au numéro marchand, avec ta référence en note.'
+  },
+  {
+    n: '03',
+    title: 'Tu entres avec ton QR',
+    text: "Dès le paiement vérifié, ton billet à QR sécurisé arrive par email. Présente-le à l'entrée."
+  }
+];
+
+function HowItWorks() {
+  return (
+    <section id="comment-ca-marche" className="container scroll-mt-24 py-14 md:py-16">
+      <p className="ed-kicker">Le parcours</p>
+      <h2 className="mt-3 text-[clamp(2rem,4.5vw,3.5rem)] font-black uppercase tracking-tight text-ed-ink">
+        Trois gestes, c&apos;est réglé
+      </h2>
+      <div className="mt-8">
+        {STEPS.map((s) => (
+          <div key={s.n} className="grid grid-cols-[72px_1fr] gap-5 border-t border-ed-rule py-6 last:border-b md:grid-cols-[110px_1fr]">
+            <span aria-hidden="true" className="ed-outline text-5xl font-black leading-none md:text-6xl">
+              {s.n}
             </span>
-            <h2 className="mb-2.5 font-display text-[2rem] font-black tracking-tight">Ou òganize evènman ?</h2>
-            <p className="max-w-[520px] leading-[1.6] text-white/90">
-              Kreye evènman ou gratis, vann tikè anliy, swiv lavant ou an dirèk epi resevwa lajan ou sou MonCash oswa
-              NatCash.
+            <div>
+              <h3 className="text-lg font-extrabold uppercase tracking-wide text-ed-ink">{s.title}</h3>
+              <p className="mt-1 max-w-[62ch] text-ed-muted">{s.text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-8 grid gap-4 md:grid-cols-2">
+        {[
+          { label: 'MonCash marchand', number: MONCASH_NUMBER },
+          { label: 'NatCash marchand', number: NATCASH_NUMBER }
+        ].map((m) => (
+          <div key={m.label} className="border-2 border-ed-ink bg-white p-6">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-ed-muted">{m.label}</p>
+            <p className="mt-2 text-2xl font-black tracking-tight text-ed-ink md:text-[1.7rem]">
+              {m.number}
+              <CopyButton value={m.number.replace(/\s/g, '')} label={m.label} />
             </p>
           </div>
-          <Link
-            href="/register"
-            className="rounded-full bg-white px-8 py-4 font-display text-[1rem] font-extrabold text-tike-ink shadow-lg transition hover:-translate-y-0.5"
-          >
-            Kreye evènman gratis
-          </Link>
-        </div>
+        ))}
       </div>
-    </div>
+      <p className="mt-4 text-sm text-ed-muted">
+        Les numéros marchands s&apos;affichent aussi à l&apos;étape de paiement, avec ta référence personnelle.
+      </p>
+    </section>
   );
 }
 
-export default function Home() {
+/* ---------------- CTA final ---------------- */
+
+function FinalCta() {
   return (
-    <>
-      <Hero />
-      <CategoryPills />
-      <EventsGrid />
-      <How />
-      <Faq />
-      <div className="pb-14">
-        <Organizer />
+    <section className="border-t-2 border-ed-ink py-14 text-center md:py-16">
+      <div className="container">
+        <h2 className="text-[clamp(2.2rem,5.5vw,4.5rem)] font-black uppercase tracking-tight text-ed-ink">
+          On se voit au concert.
+        </h2>
+        <p className="mt-3 text-ed-muted">Choisis ta date, paie par mobile, reçois ton QR.</p>
+        <Link
+          href="/events"
+          className="mt-8 inline-block bg-ed-red px-10 py-4 text-sm font-extrabold uppercase tracking-widest text-white transition hover:bg-ed-ink"
+        >
+          Prendre mon billet
+        </Link>
       </div>
-    </>
+    </section>
+  );
+}
+
+/* ---------------- Page ---------------- */
+
+export default function HomePage() {
+  const [events, setEvents] = useState<EventItem[] | null>(null);
+
+  useEffect(() => {
+    api<PageResult>('/events?limit=12')
+      .then((r) => setEvents(r.items ?? []))
+      .catch(() => setEvents([]));
+  }, []);
+
+  return (
+    <div className="ed-scope">
+      <Hero events={events} />
+      <Agenda events={events} />
+      <Manifesto />
+      <HowItWorks />
+      <FinalCta />
+    </div>
   );
 }

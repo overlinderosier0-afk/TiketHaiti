@@ -19,11 +19,20 @@ export default {
           violet: '#2F5BFF',
           pink: '#1E3FAE',
           amber: '#F4B942'
+        },
+        // Direction éditoriale v2 (landing 2026-10-03) : papier clair + encre + vermillon.
+        ed: {
+          paper: '#FAF6EF',
+          ink: '#16130E',
+          red: '#D93A2B',
+          muted: '#6B6355',
+          rule: '#D8D0BF'
         }
       },
       fontFamily: {
         display: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        ed: ['Archivo', 'ui-sans-serif', 'system-ui', 'sans-serif']
       },
       boxShadow: {
         tike: '0 20px 45px -18px rgba(47,91,255,.22)'

@@ -6,7 +6,7 @@ import { AuthProvider } from '../lib/auth';
 
 const SITE_URL = 'https://tikeayiti.com';
 const SITE_DESC =
-  'Achte tikè pou pi bèl evènman Ayiti yo. Peye ak MonCash oswa NatCash, jwenn tikè QR ou nan kont ou.';
+  'Tes billets pour les plus beaux événements d’Haïti. Paie avec MonCash ou NatCash, reçois ton billet QR par email.';
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -33,13 +33,13 @@ export const metadata = {
 
 function LogoMark() {
   return (
-    <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-tike-violet shadow-lg">
+    <span className="grid h-10 w-10 place-items-center bg-ed-ink">
       <svg
         width="22"
         height="22"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#fff"
+        stroke="#FAF6EF"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -58,42 +58,42 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600;700&family=Archivo:wght@700;800;900&display=swap"
           rel="stylesheet"
         />
       </head>
       <body>
         <AuthProvider>
-          <header className="sticky top-0 z-50 border-b border-tike-violet/10 bg-tike-bg/85 backdrop-blur">
+          <header className="sticky top-0 z-50 border-b-2 border-ed-ink bg-ed-paper/95 backdrop-blur">
             <AdminAwareNav />
           </header>
           <DevWarningBanner />
           <main>{children}</main>
-          <footer className="border-t border-tike-violet/10 bg-white">
+          <footer className="border-t-2 border-ed-ink bg-ed-paper font-ed">
             <div className="container flex flex-wrap items-center justify-between gap-4 py-10">
               <Link href="/" className="flex items-center gap-2.5">
                 <LogoMark />
-                <span className="font-display text-xl font-black tracking-tight text-tike-ink">
-                  Tikè Ayiti
+                <span className="text-xl font-black tracking-tight text-ed-ink">
+                  TIKE<span className="text-ed-red">AYITI</span>
                 </span>
               </Link>
               <div className="flex gap-6">
                 {[
-                  ['Evènman', '/events'],
-                  ['Tikè mwen', '/tickets'],
-                  ['Kontak', '/profile'],
+                  ['Événements', '/events'],
+                  ['Mes billets', '/tickets'],
+                  ['Contact', '/profile'],
                 ].map(([label, href]) => (
                   <Link
                     key={href}
                     href={href}
-                    className="text-sm font-semibold text-tike-muted transition hover:text-tike-ink"
+                    className="text-sm font-bold uppercase tracking-wide text-ed-muted transition hover:text-ed-red"
                   >
                     {label}
                   </Link>
                 ))}
               </div>
-              <p className="text-sm text-tike-muted">
-                © 2026 Tikè Ayiti. Fè ak fyète an Ayiti.
+              <p className="text-sm text-ed-muted">
+                © 2026 Tikè Ayiti. Fait avec fierté en Haïti.
               </p>
             </div>
           </footer>
