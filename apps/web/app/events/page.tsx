@@ -130,31 +130,31 @@ export default async function EventsPage({
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:mt-10 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
         {data?.items.map((ev) => (
           <Link
             key={ev.id}
             href={`/events/${ev.slug || ev.id}`}
-            className="group rounded-3xl border border-slate-100 bg-white p-3 shadow-sm transition hover:-translate-y-1.5 hover:shadow-xl sm:rounded-[1.8rem] sm:p-6"
+            className="group border-2 border-ed-ink bg-white p-4 transition hover:bg-ed-paper sm:p-5"
           >
             {publicUploadUrl(ev.bannerUrl) && (
-              <div className="-m-3 mb-3 h-28 overflow-hidden rounded-t-3xl sm:-mx-6 sm:-mt-6 sm:mb-6 sm:h-44 sm:rounded-t-[1.8rem]">
+              <div className="-m-4 mb-4 h-40 overflow-hidden border-b-2 border-ed-ink sm:-m-5 sm:mb-5 sm:h-48">
                 <img
                   src={publicUploadUrl(ev.bannerUrl)!}
                   alt={ev.title}
-                  className="h-full w-full object-cover transition group-hover:scale-105"
+                  className="h-full w-full object-cover transition group-hover:scale-[1.03]"
                 />
               </div>
             )}
             {ev.category && <CategoryPill>{ev.category}</CategoryPill>}
-            <p className="mt-3 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 sm:mt-4 sm:text-xs sm:tracking-[0.18em]">
+            <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-ed-red">
               {formatDate(ev.eventDate)} · {ev.city?.name}
             </p>
-            <h3 className="mt-1 line-clamp-2 text-base font-black text-slate-900 sm:mt-2 sm:text-2xl">
+            <h3 className="mt-1 line-clamp-2 text-xl font-black tracking-tight text-ed-ink sm:text-2xl">
               {ev.title}
             </h3>
-            <div className="mt-3 flex flex-col items-start gap-2 sm:mt-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-black text-slate-900 sm:text-lg">
+            <div className="mt-4 flex items-center justify-between gap-2 border-t border-ed-rule pt-4">
+              <p className="text-lg font-black text-ed-ink">
                 {ev.price > 0 ? `${ev.price.toLocaleString('fr-FR')} HTG` : 'Gratuit'}
               </p>
               {ev.ticketsAvailable > 0 ? (
@@ -163,7 +163,7 @@ export default async function EventsPage({
                 <StatusPill tone="red">Complet</StatusPill>
               )}
             </div>
-            <span className="mt-5 hidden rounded-full bg-slate-900 px-5 py-2.5 text-sm font-black text-white transition group-hover:bg-campy sm:inline-flex">
+            <span className="mt-4 inline-block bg-ed-ink px-5 py-2.5 text-xs font-extrabold uppercase tracking-widest text-ed-paper transition group-hover:bg-ed-red">
               Prendre mes billets →
             </span>
           </Link>
@@ -173,10 +173,10 @@ export default async function EventsPage({
       {data && data.items.length === 0 && (
         <div className="mt-10">
           <EmptyState
-            title={q ? `Okenn rezilta pou « ${q} »` : 'Aucun événement à venir'}
+            title={q ? `Aucun résultat pour « ${q} »` : 'Aucun événement à venir'}
             text={
               q
-                ? 'Eseye yon lòt mo, oubyen efase rechèch la pou wè tout evènman yo.'
+                ? 'Essaie un autre mot, ou efface la recherche pour voir tout le catalogue.'
                 : "Essaie une autre ville, ou reviens bientôt : le catalogue s'agrandit."
             }
           />
@@ -188,19 +188,19 @@ export default async function EventsPage({
           <Link
             href={pageHref(city, category, q, page - 1)}
             aria-disabled={page <= 1}
-            className={`rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 ${
+            className={`border-2 border-ed-ink bg-white px-4 py-2 text-sm font-extrabold uppercase tracking-widest text-ed-ink transition hover:bg-ed-ink hover:text-ed-paper ${
               page <= 1 ? 'pointer-events-none opacity-40' : ''
             }`}
           >
             ← Précédent
           </Link>
-          <span className="text-sm font-bold text-slate-600">
+          <span className="text-sm font-bold text-ed-muted">
             Page {page} / {data.totalPages}
           </span>
           <Link
             href={pageHref(city, category, q, page + 1)}
             aria-disabled={page >= data.totalPages}
-            className={`rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 ${
+            className={`border-2 border-ed-ink bg-white px-4 py-2 text-sm font-extrabold uppercase tracking-widest text-ed-ink transition hover:bg-ed-ink hover:text-ed-paper ${
               page >= data.totalPages ? 'pointer-events-none opacity-40' : ''
             }`}
           >

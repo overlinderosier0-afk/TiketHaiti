@@ -98,7 +98,7 @@ export default function ProfilePage() {
       });
       await refresh();
       setEditing(false);
-      setSavedMsg('✅ Profil mis à jour');
+      setSavedMsg('Profil mis à jour');
     } catch (err: any) {
       setError(err?.message || 'Mise à jour impossible');
     } finally {
@@ -110,7 +110,7 @@ export default function ProfilePage() {
     return (
       <section className="container py-14">
         <PageHead eyebrow="Compte" title="Mon profil" sub="Connecte-toi pour voir ton profil." />
-        <Link href="/login?next=/profile" className="mt-6 inline-flex items-center justify-center rounded-full bg-campy px-7 py-3 font-black text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">
+        <Link href="/login?next=/profile" className="mt-6 inline-flex items-center justify-center bg-ed-red px-7 py-3.5 text-sm font-extrabold uppercase tracking-widest text-white transition hover:bg-ed-ink">
           Se connecter
         </Link>
       </section>
@@ -120,27 +120,27 @@ export default function ProfilePage() {
   return (
     <section className="container py-14">
       <PageHead eyebrow="Compte" title="Mon profil" />
-      {savedMsg && <p className="mt-4 font-bold text-emerald-700">{savedMsg}</p>}
+      {savedMsg && <p className="mt-4 border-2 border-ed-ink bg-white p-3 font-bold text-ed-ink">{savedMsg}</p>}
 
       {user && (
-        <div className="mt-8 rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm">
+        <div className="mt-8 border-2 border-ed-ink bg-white p-7">
           {!editing ? (
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Compte connecté</p>
-                <h2 className="mt-2 text-2xl font-black text-slate-900">{user.firstName} {user.lastName}</h2>
-                <p className="mt-1 font-bold text-slate-500">{user.email}{user.phone ? ` · ${user.phone}` : ''}</p>
+                <p className="ed-kicker">Compte connecté</p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-ed-ink">{user.firstName} {user.lastName}</h2>
+                <p className="mt-1 font-bold text-ed-muted">{user.email}{user.phone ? ` · ${user.phone}` : ''}</p>
               </div>
               <button
                 onClick={() => setEditing(true)}
-                className="rounded-full border-2 border-campy px-5 py-2 text-sm font-black text-campy transition hover:bg-campy hover:text-white"
+                className="border-2 border-ed-ink px-5 py-2 text-xs font-extrabold uppercase tracking-widest text-ed-ink transition hover:bg-ed-ink hover:text-ed-paper"
               >
                 Modifier mon profil
               </button>
             </div>
           ) : (
             <form onSubmit={saveProfile} className="grid gap-4">
-              <h2 className="text-xl font-black text-slate-900">Modifier mon profil</h2>
+              <h2 className="text-xl font-black uppercase tracking-tight text-ed-ink">Modifier mon profil</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Prénom">
                   <input className={inputCls} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required />
@@ -168,7 +168,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <h2 className="mt-12 text-2xl font-black text-slate-900">Mes commandes</h2>
+      <h2 className="mt-12 text-2xl font-black uppercase tracking-tight text-ed-ink">Mes commandes</h2>
       {error && <div className="mt-4"><ErrorBox>{error}</ErrorBox></div>}
       {orders.length === 0 && !error && (
         <div className="mt-4">
@@ -219,11 +219,11 @@ function OrderCard({ order: o, onCancelled }: { order: OrderItem; onCancelled: (
   }
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+    <div className="border-2 border-ed-ink bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="font-black text-slate-900">{o.event.title}</p>
-          <p className="text-sm font-bold text-slate-500">
+          <p className="font-black uppercase tracking-tight text-ed-ink">{o.event.title}</p>
+          <p className="text-sm font-bold text-ed-muted">
             {new Date(o.event.eventDate).toLocaleDateString('fr-FR')} · {o.quantity} billet(s) · {o.total > 0 ? `${o.total.toLocaleString('fr-FR')} HTG` : 'Gratuit'}
           </p>
         </div>
@@ -231,29 +231,29 @@ function OrderCard({ order: o, onCancelled }: { order: OrderItem; onCancelled: (
       </div>
 
       {pending && o.manualPayment && (
-        <div className="mt-3 rounded-xl border-2 border-campy/20 bg-blue-50/60 p-4">
-          <p className="text-xs font-black uppercase tracking-[0.15em] text-campy">
-            💳 Paiement {o.manualPayment.providerLabel} en attente
+        <div className="mt-3 border-2 border-ed-ink bg-ed-paper p-4">
+          <p className="ed-kicker">
+            Paiement {o.manualPayment.providerLabel} en attente
           </p>
-          <p className="mt-2 text-sm font-bold text-slate-600">{o.manualPayment.instructions}</p>
+          <p className="mt-2 text-sm font-bold text-ed-ink">{o.manualPayment.instructions}</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <div className="rounded-lg bg-white p-3">
-              <p className="text-xs font-black uppercase tracking-wider text-slate-400">Numéro marchand</p>
-              <p className="mt-1 font-mono text-lg font-black text-slate-900">
+            <div className="border border-ed-rule bg-white p-3">
+              <p className="text-xs font-extrabold uppercase tracking-wider text-ed-muted">Numéro marchand</p>
+              <p className="mt-1 font-mono text-lg font-black text-ed-ink">
                 {o.manualPayment.merchantNumber || 'À configurer'}
               </p>
             </div>
-            <div className="rounded-lg bg-white p-3">
-              <p className="text-xs font-black uppercase tracking-wider text-slate-400">Référence (note du transfert)</p>
+            <div className="border border-ed-rule bg-white p-3">
+              <p className="text-xs font-extrabold uppercase tracking-wider text-ed-muted">Référence (note du transfert)</p>
               <div className="mt-1 flex items-center gap-2">
-                <p className="font-mono text-lg font-black text-campy">{o.manualPayment.reference}</p>
+                <p className="font-mono text-lg font-black text-ed-red">{o.manualPayment.reference}</p>
                 {o.manualPayment.reference && (
                   <button
                     onClick={() => copyText(o.manualPayment!.reference!, () => {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 1500);
                     })}
-                    className="rounded-full bg-campy px-3 py-1 text-xs font-black text-white transition hover:bg-campyDark"
+                    className="bg-ed-red px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-white transition hover:bg-ed-ink"
                   >
                     {copied ? 'Copié ✓' : 'Copier'}
                   </button>
@@ -262,19 +262,19 @@ function OrderCard({ order: o, onCancelled }: { order: OrderItem; onCancelled: (
             </div>
           </div>
           {o.manualPayment.expiresAt && (
-            <p className="mt-2 text-xs font-bold text-amber-600">
-              ⏳ À régler avant le {new Date(o.manualPayment.expiresAt).toLocaleString('fr-FR')}, sinon la commande est annulée.
+            <p className="mt-2 text-xs font-bold text-ed-muted">
+              À régler avant le {new Date(o.manualPayment.expiresAt).toLocaleString('fr-FR')}, sinon la commande est annulée.
             </p>
           )}
         </div>
       )}
 
       {canCancel && (
-        <div className="mt-4 border-t border-slate-100 pt-3">
+        <div className="mt-4 border-t border-ed-rule pt-3">
           <button
             onClick={cancelOrder}
             disabled={cancelling}
-            className="text-sm font-black text-red-600 transition hover:underline disabled:opacity-50"
+            className="text-sm font-extrabold uppercase tracking-widest text-ed-red transition hover:underline disabled:opacity-50"
           >
             {cancelling ? 'Annulation…' : 'Annuler cette commande'}
           </button>

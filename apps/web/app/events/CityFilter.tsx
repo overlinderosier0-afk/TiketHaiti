@@ -23,9 +23,9 @@ export default function CityFilter({ initial }: { initial: string }) {
         value={city}
         onChange={(e) => setCity(e.target.value)}
         placeholder="Ville… (ex. Jacmel)"
-        className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
+        className="min-w-0 flex-1 border-2 border-ed-ink bg-white px-4 py-2 text-sm outline-none transition placeholder:text-ed-muted/60 focus:border-ed-red"
       />
-      <button className="shrink-0 rounded-full bg-campy px-5 py-2 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">
+      <button className="shrink-0 bg-ed-red px-5 py-2 text-sm font-extrabold uppercase tracking-widest text-white transition hover:bg-ed-ink">
         Filtrer
       </button>
     </form>

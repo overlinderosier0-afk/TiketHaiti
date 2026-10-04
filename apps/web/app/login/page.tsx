@@ -36,11 +36,11 @@ function LoginForm() {
 
   return (
     <section className="container flex justify-center py-20">
-      <div className="w-full max-w-md rounded-[2rem] border border-slate-100 bg-white p-8 shadow-xl">
+      <div className="w-full max-w-md border-2 border-ed-ink bg-white p-8">
         <div className="text-center">
-          <p className="text-xs font-black uppercase tracking-[0.28em] text-campy">Tikè Ayiti</p>
-          <h1 className="mt-4 text-3xl font-black text-slate-900">Bon retour</h1>
-          <p className="mt-2 text-sm font-bold text-slate-500">Connecte-toi pour retrouver tes billets.</p>
+          <p className="ed-kicker">Tikè Ayiti</p>
+          <h1 className="mt-4 text-3xl font-black uppercase tracking-tight text-ed-ink">Bon retour</h1>
+          <p className="mt-2 text-sm font-bold text-ed-muted">Connecte-toi pour retrouver tes billets.</p>
         </div>
         <form onSubmit={submit} className="mt-8">
           {error && <div className="mb-4"><ErrorBox>{error}</ErrorBox></div>}
@@ -56,8 +56,8 @@ function LoginForm() {
             {busy ? 'Connexion…' : 'Se connecter'}
           </PrimaryButton>
           <div className="mt-5 text-center text-sm">
-            <span className="text-slate-500">Pas encore de compte ?</span>{' '}
-            <Link href="/register" className="font-black text-campy">Créer un compte</Link>
+            <span className="text-ed-muted">Pas encore de compte ?</span>{' '}
+            <Link href="/register" className="font-extrabold uppercase tracking-widest text-ed-red hover:text-ed-ink">Créer un compte</Link>
           </div>
         </form>
       </div>

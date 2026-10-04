@@ -38,14 +38,14 @@ export default function RegisterPage() {
 
   return (
     <section className="container flex justify-center py-20">
-      <div className="w-full max-w-2xl rounded-[2rem] border border-slate-100 bg-white p-8 shadow-xl">
+      <div className="w-full max-w-2xl border-2 border-ed-ink bg-white p-8">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-campy">Tikè Ayiti</p>
-            <h1 className="mt-3 text-4xl font-black text-slate-900">Créer mon compte</h1>
-            <p className="mt-2 text-sm font-bold text-slate-500">Gratuit, en moins d'une minute.</p>
+            <p className="ed-kicker">Tikè Ayiti</p>
+            <h1 className="mt-3 text-4xl font-black uppercase tracking-tight text-ed-ink">Créer mon compte</h1>
+            <p className="mt-2 text-sm font-bold text-ed-muted">Gratuit, en moins d'une minute.</p>
           </div>
-          <span className="rounded-full bg-blue-50 px-4 py-2 text-xs font-black text-campy">Gratuit</span>
+          <span className="border-[1.5px] border-ed-ink px-4 py-2 text-xs font-extrabold uppercase tracking-widest text-ed-ink">Gratuit</span>
         </div>
 
         <form onSubmit={submit} className="mt-8 grid gap-5 md:grid-cols-2">
@@ -59,20 +59,20 @@ export default function RegisterPage() {
           <Field label="Email" className="md:col-span-2">
             <input className={inputCls} type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} />
           </Field>
-          <Field label={<>Téléphone <span className="font-normal text-slate-400">(optionnel)</span></>} className="md:col-span-2">
+          <Field label={<>Téléphone <span className="font-normal normal-case tracking-normal text-ed-muted">(optionnel)</span></>} className="md:col-span-2">
             <input className={inputCls} type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
           </Field>
-          <Field label={<>Mot de passe <span className="font-normal text-slate-400">(6 caractères min.)</span></>} className="md:col-span-2">
+          <Field label={<>Mot de passe <span className="font-normal normal-case tracking-normal text-ed-muted">(6 caractères min.)</span></>} className="md:col-span-2">
             <input className={inputCls} type="password" required minLength={6} value={form.password} onChange={(e) => set('password', e.target.value)} />
           </Field>
           <div className="md:col-span-2">
-            <PrimaryButton disabled={busy} className="w-full hover:scale-[1.02]">
+            <PrimaryButton disabled={busy} className="w-full">
               {busy ? 'Création…' : 'Créer un compte'}
             </PrimaryButton>
           </div>
           <div className="md:col-span-2 text-center text-sm">
-            <span className="text-slate-500">Déjà inscrit ?</span>{' '}
-            <Link href="/login" className="font-black text-campy">Se connecter</Link>
+            <span className="text-ed-muted">Déjà inscrit ?</span>{' '}
+            <Link href="/login" className="font-extrabold uppercase tracking-widest text-ed-red hover:text-ed-ink">Se connecter</Link>
           </div>
         </form>
       </div>

@@ -68,7 +68,7 @@ export default function TicketsPage() {
     return (
       <section className="container py-14">
         <PageHead eyebrow="Billets" title="Mes billets" sub="Connecte-toi pour voir tes billets." />
-        <Link href="/login?next=/tickets" className="mt-6 inline-flex items-center justify-center rounded-full bg-campy px-7 py-3 font-black text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">
+        <Link href="/login?next=/tickets" className="mt-6 inline-flex items-center justify-center bg-ed-red px-7 py-3.5 text-sm font-extrabold uppercase tracking-widest text-white transition hover:bg-ed-ink">
           Se connecter
         </Link>
       </section>
@@ -77,7 +77,7 @@ export default function TicketsPage() {
 
   return (
     <section className="container py-14">
-      <Link href="/events" className="inline-flex items-center gap-1 text-sm font-black text-campy transition hover:underline">
+      <Link href="/events" className="inline-flex items-center gap-1 text-sm font-extrabold uppercase tracking-widest text-ed-red transition hover:text-ed-ink">
         ← Retour aux événements
       </Link>
       <div className="mt-4">
@@ -99,16 +99,16 @@ export default function TicketsPage() {
 
       <div className="mt-8 grid gap-6 md:grid-cols-2">
         {tickets.map((t) => (
-          <article key={t.id} className="overflow-hidden rounded-[1.8rem] border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-            <div className="bg-gradient-to-br from-campy to-campyDark p-5 text-white">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
+          <article key={t.id} className="border-2 border-ed-ink bg-white">
+            <div className="border-b-2 border-ed-ink bg-ed-ink p-5 text-ed-paper">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-ed-red">
                 {new Date(t.event.eventDate).toLocaleDateString('fr-FR')}{t.event.city?.name ? ` · ${t.event.city.name}` : ''}
               </p>
-              <h3 className="mt-1 text-xl font-black leading-tight">{t.event.title}</h3>
+              <h3 className="mt-1 text-xl font-black uppercase leading-tight tracking-tight">{t.event.title}</h3>
             </div>
             <div className="flex items-center justify-between gap-4 p-5">
               <div>
-                <p className="break-all font-mono text-sm font-black text-slate-900">{t.id}</p>
+                <p className="break-all font-mono text-sm font-black text-ed-ink">{t.id}</p>
                 <div className="mt-2">
                   {t.checkedIn ? (
                     <StatusPill tone="slate">Utilisé</StatusPill>
@@ -127,7 +127,7 @@ export default function TicketsPage() {
                     <button
                       onClick={() => remove(t)}
                       disabled={deleting === t.id}
-                      className="text-sm font-black text-red-600 transition hover:underline disabled:opacity-50"
+                      className="text-sm font-extrabold uppercase tracking-widest text-ed-red transition hover:underline disabled:opacity-50"
                     >
                       {deleting === t.id ? 'Suppression…' : 'Supprimer'}
                     </button>
@@ -136,7 +136,7 @@ export default function TicketsPage() {
               </div>
               {t.qrImage && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={t.qrImage} alt={`QR ${t.id}`} className="h-28 w-28 shrink-0 rounded-xl border border-slate-200 bg-white p-1" />
+                <img src={t.qrImage} alt={`QR ${t.id}`} className="h-28 w-28 shrink-0 border-2 border-ed-ink bg-white p-1" />
               )}
             </div>
           </article>

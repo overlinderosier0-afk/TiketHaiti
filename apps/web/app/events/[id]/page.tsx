@@ -134,47 +134,48 @@ export default async function EventDetailPage({
       />
       <Link
         href="/events"
-        className="text-sm font-black text-campy transition hover:text-campyDark"
+        className="text-sm font-extrabold uppercase tracking-widest text-ed-red transition hover:text-ed-ink"
       >
         ← Tous les événements
       </Link>
 
       <div className="mt-6 max-w-3xl">
         {banner ? (
-          <div className="relative overflow-hidden rounded-[1.8rem] shadow-sm">
-            <img src={banner} alt={event.title} className="h-64 w-full object-cover md:h-96" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
+          <div className="border-2 border-ed-ink bg-white">
+            <div className="border-b-2 border-ed-ink">
+              <img src={banner} alt={event.title} className="h-64 w-full object-cover md:h-96" />
+            </div>
+            <div className="p-6 md:p-8">
               {event.category && <CategoryPill>{event.category}</CategoryPill>}
-              <h1 className="mt-3 text-4xl font-black leading-tight text-white md:text-5xl">
-                {event.title}
-              </h1>
-              <p className="mt-2 text-sm font-black uppercase tracking-[0.2em] text-white/85">
+              <p className="mt-4 text-sm font-extrabold uppercase tracking-[0.2em] text-ed-red">
                 {formatDate(event.eventDate)} · {event.city?.name}
               </p>
+              <h1 className="mt-3 text-4xl font-black uppercase leading-tight tracking-tight text-ed-ink md:text-5xl">
+                {event.title}
+              </h1>
             </div>
           </div>
         ) : (
           <>
             {event.category && <CategoryPill>{event.category}</CategoryPill>}
-            <p className="mt-4 text-sm font-black uppercase tracking-[0.2em] text-campy">
+            <p className="ed-kicker mt-4">
               {formatDate(event.eventDate)} · {event.city?.name}
             </p>
-            <h1 className="mt-3 text-4xl font-black leading-tight text-slate-900 md:text-5xl">
+            <h1 className="mt-3 text-4xl font-black uppercase leading-tight tracking-tight text-ed-ink md:text-5xl">
               {event.title}
             </h1>
           </>
         )}
         {event.artistName && (
-          <p className="mt-3 text-xl font-bold text-slate-600">{event.artistName}</p>
+          <p className="mt-3 text-xl font-bold text-ed-muted">{event.artistName}</p>
         )}
         {isPast && (
           <div className="mt-6">
             <StatusPill tone="red">Événement terminé</StatusPill>
           </div>
         )}
-        <p className="mt-6 text-lg leading-8 text-slate-600">{event.description}</p>
-        <div className="mt-6 space-y-1 text-sm font-bold text-slate-500">
+        <p className="mt-6 text-lg leading-8 text-ed-muted">{event.description}</p>
+        <div className="mt-6 space-y-1 text-sm font-bold text-ed-muted">
           {event.address && <p>📍 {event.address}</p>}
           {event.doorsOpen && (
             <p>🚪 Ouverture des portes : {new Date(event.doorsOpen).toLocaleString('fr-FR')}</p>

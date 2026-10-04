@@ -21,10 +21,10 @@ export default function CategoryFilter({
   }
 
   const pill = (active: boolean) =>
-    `rounded-full px-4 py-1.5 text-xs font-black transition ${
+    `px-4 py-1.5 text-xs font-extrabold uppercase tracking-widest transition ${
       active
-        ? 'bg-campy text-white shadow-md shadow-blue-200'
-        : 'border border-slate-200 bg-white text-slate-600 hover:border-campy hover:text-campy'
+        ? 'bg-ed-ink text-ed-paper'
+        : 'border-[1.5px] border-ed-ink bg-white text-ed-ink hover:bg-ed-ink hover:text-ed-paper'
     }`;
 
   return (

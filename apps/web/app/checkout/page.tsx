@@ -125,7 +125,7 @@ function CheckoutForm() {
     return (
       <section className="container max-w-2xl py-16">
         <PageHead eyebrow="Checkout" title="Paiement" sub="Aucune commande sélectionnée." />
-        <Link href="/events" className="mt-6 inline-block font-black text-campy">Voir les événements →</Link>
+        <Link href="/events" className="mt-6 inline-block text-sm font-extrabold uppercase tracking-widest text-ed-red">Voir les événements →</Link>
       </section>
     );
   }
@@ -139,24 +139,24 @@ function CheckoutForm() {
 
       {error && <div className="mt-6"><ErrorBox>{error}</ErrorBox></div>}
 
-      {!order && !error && <p className="mt-8 text-slate-400">Chargement de la commande…</p>}
+      {!order && !error && <p className="mt-8 text-ed-muted">Chargement de la commande…</p>}
 
       {order && (
-        <div className="mt-8 rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm md:p-8">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Commande</p>
-          <h2 className="mt-2 text-2xl font-black text-slate-900">{order.event.title}</h2>
-          <p className="mt-1 text-sm font-bold text-slate-500">
+        <div className="mt-8 border-2 border-ed-ink bg-white p-7 md:p-8">
+          <p className="ed-kicker">Commande</p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-ed-ink">{order.event.title}</h2>
+          <p className="mt-1 text-sm font-bold text-ed-muted">
             {new Date(order.event.eventDate).toLocaleDateString('fr-FR')} · {order.event.city?.name} · {order.quantity} billet(s)
           </p>
           <div className="mt-5 flex items-center justify-between">
-            <p className="text-3xl font-black text-campy">{order.total.toLocaleString('fr-FR')} HTG</p>
+            <p className="text-3xl font-black tracking-tight text-ed-red">{order.total.toLocaleString('fr-FR')} HTG</p>
             <StatusPill tone={statusTone(order.paymentStatus)}>{statusLabel(order.paymentStatus)}</StatusPill>
           </div>
 
           {expired && (
-            <div className="mt-6 rounded-2xl bg-red-50 p-5">
-              <p className="font-bold text-red-700">Délai de paiement dépassé : cette commande a été annulée et les places libérées.</p>
-              <Link href="/events" className="mt-2 inline-block font-black text-campy underline">Choisir un autre événement</Link>
+            <div className="mt-6 border-2 border-ed-red bg-white p-5">
+              <p className="font-bold text-ed-red">Délai de paiement dépassé : cette commande a été annulée et les places libérées.</p>
+              <Link href="/events" className="mt-2 inline-block text-sm font-extrabold uppercase tracking-widest text-ed-red underline">Choisir un autre événement</Link>
             </div>
           )}
 
@@ -167,10 +167,10 @@ function CheckoutForm() {
                   <button
                     key={p}
                     onClick={() => setProvider(p)}
-                    className={`rounded-2xl border-2 p-4 font-black transition ${
+                    className={`border-2 p-4 text-sm font-extrabold uppercase tracking-widest transition ${
                       provider === p
-                        ? 'border-campy bg-blue-50 text-campy'
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        ? 'border-ed-red bg-ed-red text-white'
+                        : 'border-ed-ink bg-white text-ed-ink hover:bg-ed-ink hover:text-ed-paper'
                     }`}
                   >
                     {p === 'moncash' ? 'MonCash' : 'NatCash'}
@@ -180,27 +180,27 @@ function CheckoutForm() {
               <PrimaryButton onClick={initiate} disabled={busy} className="mt-5 w-full">
                 {busy ? 'Initialisation…' : `Payer avec ${providerLabel}`}
               </PrimaryButton>
-              <p className="mt-4 text-center text-xs font-bold text-slate-400">
+              <p className="mt-4 text-center text-xs font-bold text-ed-muted">
                 Tu recevras le numéro marchand et ta référence de paiement à l'étape suivante.
               </p>
             </>
           )}
 
           {!expired && order.paymentStatus === 'PENDING' && manual && (
-            <div className="mt-6 rounded-2xl bg-blue-50 p-5 md:p-6">
+            <div className="mt-6 border-2 border-ed-ink bg-ed-paper p-5 md:p-6">
               {!manual.configured ? (
-                <p className="font-bold text-red-700">
+                <p className="font-bold text-ed-red">
                   Paiement manuel non configuré pour le moment. Contactez le support pour finaliser votre commande.
                 </p>
               ) : (
                 <>
-                  <p className="text-lg font-black text-slate-900">Payez avec {providerLabel}</p>
-                  <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm leading-6 text-slate-700">
+                  <p className="text-lg font-black uppercase tracking-tight text-ed-ink">Payez avec {providerLabel}</p>
+                  <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm leading-6 text-ed-ink">
                     <li>
                       Envoyez <strong>{order.total.toLocaleString('fr-FR')} HTG</strong> au numéro{' '}
                       <button
                         onClick={() => copyText(manual.merchantNumber, () => setCopied('number'))}
-                        className="rounded-lg bg-white px-2 py-1 font-black text-campy shadow-sm transition hover:bg-blue-100"
+                        className="border-[1.5px] border-ed-ink bg-white px-2 py-1 font-extrabold text-ed-red transition hover:bg-ed-ink hover:text-ed-paper"
                         title="Copier le numéro"
                       >
                         {manual.merchantNumber} {copied === 'number' ? '✓' : '⧉'}
@@ -211,7 +211,7 @@ function CheckoutForm() {
                       Dans la <strong>note du transfert</strong>, recopiez exactement la référence{' '}
                       <button
                         onClick={() => copyText(manual.referenceNote || '', () => setCopied('ref'))}
-                        className="rounded-lg bg-white px-2 py-1 font-mono font-black text-campy shadow-sm transition hover:bg-blue-100"
+                        className="border-[1.5px] border-ed-ink bg-white px-2 py-1 font-mono font-extrabold text-ed-red transition hover:bg-ed-ink hover:text-ed-paper"
                         title="Copier la référence"
                       >
                         {manual.referenceNote} {copied === 'ref' ? '✓' : '⧉'}
@@ -223,8 +223,8 @@ function CheckoutForm() {
                     </li>
                   </ol>
                   {order.expiresAt && (
-                    <p className="mt-4 rounded-xl bg-white/70 p-3 text-xs font-bold text-slate-500">
-                      ⏳ Paiement attendu avant le {new Date(order.expiresAt).toLocaleString('fr-FR')}, sinon la commande est annulée.
+                    <p className="mt-4 border border-ed-rule bg-white p-3 text-xs font-bold text-ed-muted">
+                      Paiement attendu avant le {new Date(order.expiresAt).toLocaleString('fr-FR')}, sinon la commande est annulée.
                     </p>
                   )}
                 </>

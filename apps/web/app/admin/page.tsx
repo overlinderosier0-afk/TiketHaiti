@@ -234,7 +234,7 @@ export default function AdminPage() {
     return (
       <section className="container py-14">
         <PageHead eyebrow="Admin" title="Administration" sub="Connecte-toi pour accéder à cette page." />
-        <Link href="/login?next=/admin" className="mt-6 inline-flex items-center justify-center rounded-full bg-campy px-7 py-3 font-black text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-campyDark">
+        <Link href="/login?next=/admin" className="mt-6 inline-flex items-center justify-center bg-ed-red px-7 py-3.5 text-sm font-extrabold uppercase tracking-widest text-white transition hover:bg-ed-ink">
           Se connecter
         </Link>
       </section>
@@ -262,17 +262,17 @@ export default function AdminPage() {
             ['Revenu (HTG)', stats.revenue.toLocaleString('fr-FR')],
             ['Scannés (24h)', stats.scannedToday]
           ].map(([label, value]) => (
-            <div key={label as string} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</p>
-              <p className="mt-2 text-2xl font-black text-campy">{value}</p>
+            <div key={label as string} className="border-2 border-ed-ink bg-white p-5">
+              <p className="text-xs font-extrabold uppercase tracking-widest text-ed-muted">{label}</p>
+              <p className="mt-2 text-2xl font-black text-ed-red">{value}</p>
             </div>
           ))}
         </div>
       )}
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <div className="rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm">
-          <h2 className="text-xl font-black text-slate-900">Créer un événement</h2>
+        <div className="border-2 border-ed-ink bg-white p-7">
+          <h2 className="text-xl font-black uppercase tracking-tight text-ed-ink">Créer un événement</h2>
           <form onSubmit={createEvent} className="mt-5 grid gap-4">
             <Field label="Titre">
               <input className={inputCls} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -291,7 +291,7 @@ export default function AdminPage() {
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => setBannerFile(e.target.files?.[0] ?? null)}
               />
-              {bannerFile && <p className="mt-1 text-xs font-bold text-slate-500">📎 {bannerFile.name}</p>}
+              {bannerFile && <p className="mt-1 text-xs font-bold text-ed-muted">{bannerFile.name}</p>}
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Ville">
@@ -311,15 +311,15 @@ export default function AdminPage() {
                 />
               </Field>
             </div>
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-cream p-3">
+            <label className="flex cursor-pointer items-center gap-3 border-2 border-ed-ink bg-ed-paper p-3">
               <input
                 type="checkbox"
                 checked={form.isFree}
                 onChange={(e) => setForm({ ...form, isFree: e.target.checked })}
-                className="h-5 w-5 accent-campy"
+                className="h-5 w-5 accent-[#D93A2B]"
               />
-              <span className="text-sm font-black text-slate-800">
-                Événement gratuit <span className="font-bold text-slate-500">— les billets sont émis sans paiement</span>
+              <span className="text-sm font-extrabold uppercase tracking-wide text-ed-ink">
+                Événement gratuit <span className="font-bold normal-case tracking-normal text-ed-muted">— les billets sont émis sans paiement</span>
               </span>
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -346,26 +346,26 @@ export default function AdminPage() {
             <PrimaryButton disabled={creating} className="w-full">
               {creating ? 'Création…' : 'Créer l\u2019événement'}
             </PrimaryButton>
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-cream p-3">
+            <label className="flex cursor-pointer items-center gap-3 border-2 border-ed-ink bg-ed-paper p-3">
               <input
                 type="checkbox"
                 checked={form.isDraft}
                 onChange={(e) => setForm({ ...form, isDraft: e.target.checked })}
-                className="h-5 w-5 accent-campy"
+                className="h-5 w-5 accent-[#D93A2B]"
               />
-              <span className="text-sm font-black text-slate-800">
-                Enregistrer comme brouillon <span className="font-bold text-slate-500">— invisible dans le catalogue tant qu'il n'est pas publié</span>
+              <span className="text-sm font-extrabold uppercase tracking-wide text-ed-ink">
+                Enregistrer comme brouillon <span className="font-bold normal-case tracking-normal text-ed-muted">— invisible dans le catalogue tant qu'il n'est pas publié</span>
               </span>
             </label>
-            <p className="text-xs font-bold text-slate-400">Le slug est généré automatiquement à partir du titre.</p>
+            <p className="text-xs font-bold text-ed-muted">Le slug est généré automatiquement à partir du titre.</p>
           </form>
         </div>
 
-        <div className="rounded-[1.8rem] border border-slate-100 bg-white p-7 shadow-sm">
-          <h2 className="text-xl font-black text-slate-900">Check-in (scan)</h2>
+        <div className="border-2 border-ed-ink bg-white p-7">
+          <h2 className="text-xl font-black uppercase tracking-tight text-ed-ink">Check-in (scan)</h2>
           <form onSubmit={checkin} className="mt-5 flex gap-2">
             <input
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
+              className="w-full border-2 border-ed-ink bg-white p-3 outline-none transition placeholder:text-ed-muted/60 focus:border-ed-red"
               placeholder="ID du billet (visible sur le billet)"
               value={checkinCode}
               onChange={(e) => setCheckinCode(e.target.value)}
@@ -374,18 +374,18 @@ export default function AdminPage() {
               Valider
             </PrimaryButton>
           </form>
-          {checkinMsg && <p className="mt-4 font-bold text-slate-700">{checkinMsg}</p>}
-          <p className="mt-4 text-xs font-bold text-slate-400">
+          {checkinMsg && <p className="mt-4 font-bold text-ed-ink">{checkinMsg}</p>}
+          <p className="mt-4 text-xs font-bold text-ed-muted">
             Saisis le code du billet pour valider l'entrée, ou scanne son QR.
           </p>
         </div>
       </div>
 
-      <div className="mt-12 rounded-[1.8rem] border-2 border-blue-100 bg-white p-7 shadow-sm">
+      <div className="mt-12 border-2 border-ed-ink bg-white p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-black text-slate-900">Paiements en attente</h2>
-            <p className="mt-1 text-sm font-bold text-slate-500">
+            <h2 className="text-2xl font-black uppercase tracking-tight text-ed-ink">Paiements en attente</h2>
+            <p className="mt-1 text-sm font-bold text-ed-muted">
               Vérifiez le transfert reçu sur votre MonCash/NatCash (montant + référence en note), puis confirmez.
               La confirmation émet les billets automatiquement.
             </p>
@@ -394,42 +394,42 @@ export default function AdminPage() {
             Purger les expirées
           </GhostButton>
         </div>
-        {pendingMsg && <p className="mt-3 font-bold text-slate-700">{pendingMsg}</p>}
+        {pendingMsg && <p className="mt-3 font-bold text-ed-ink">{pendingMsg}</p>}
         <div className="mt-5 space-y-3">
           {pending.map((o) => (
-            <div key={o.id} className="rounded-2xl border border-slate-100 bg-cream p-4 shadow-sm">
+            <div key={o.id} className="border border-ed-rule bg-ed-paper p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black text-slate-900">{o.event.title} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG</p>
-                  <p className="text-sm font-bold text-slate-500">
+                  <p className="font-black text-ed-ink">{o.event.title} · {o.quantity} billet(s) · {o.total.toLocaleString('fr-FR')} HTG</p>
+                  <p className="text-sm font-bold text-ed-muted">
                     {o.user.firstName} {o.user.lastName} ({o.user.email}{o.user.phone ? ` · ${o.user.phone}` : ''})
                   </p>
                   <p className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-                    <span className="rounded bg-white px-2 py-0.5 font-mono font-black text-campy shadow-sm">{o.paymentReference}</span>
+                    <span className="border border-ed-rule bg-white px-2 py-0.5 font-mono font-black text-ed-red">{o.paymentReference}</span>
                     <StatusPill tone="blue">{o.paymentMethod ?? o.payments[0]?.provider ?? '—'}</StatusPill>
                     {o.expiresAt && (
-                      <span className="text-xs font-bold text-amber-600">
-                        ⏳ expire le {new Date(o.expiresAt).toLocaleString('fr-FR')}
+                      <span className="text-xs font-bold text-ed-muted">
+                        expire le {new Date(o.expiresAt).toLocaleString('fr-FR')}
                       </span>
                     )}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <input
-                    className="w-44 rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none transition focus:border-campy focus:ring-2 focus:ring-blue-100"
+                    className="w-44 border-2 border-ed-ink bg-white p-2 text-sm outline-none transition placeholder:text-ed-muted/60 focus:border-ed-red"
                     placeholder="Réf. transfert (optionnel)"
                     value={confirmRef[o.id] || ''}
                     onChange={(e) => setConfirmRef((r) => ({ ...r, [o.id]: e.target.value }))}
                   />
                   <button
                     onClick={() => confirmPending(o.id)}
-                    className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
+                    className="bg-ed-ink px-4 py-2 text-xs font-extrabold uppercase tracking-widest text-ed-paper transition hover:bg-ed-red"
                   >
                     Confirmer
                   </button>
                   <button
                     onClick={() => cancelPending(o.id)}
-                    className="rounded-full bg-red-100 px-4 py-2 text-sm font-black text-red-700 transition hover:bg-red-200"
+                    className="border-[1.5px] border-ed-red px-4 py-2 text-xs font-extrabold uppercase tracking-widest text-ed-red transition hover:bg-ed-red hover:text-white"
                   >
                     Annuler
                   </button>
@@ -437,27 +437,27 @@ export default function AdminPage() {
               </div>
             </div>
           ))}
-          {pending.length === 0 && <p className="font-bold text-slate-400">Aucune commande en attente. 🎉</p>}
+          {pending.length === 0 && <p className="font-bold text-ed-muted">Aucune commande en attente.</p>}
         </div>
       </div>
 
-      <h2 className="mt-12 text-2xl font-black text-slate-900">Événements</h2>
+      <h2 className="mt-12 text-2xl font-black uppercase tracking-tight text-ed-ink">Événements</h2>
       <div className="mt-4 space-y-3">
         {events.map((ev) => (
-          <div key={ev.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div key={ev.id} className="border-2 border-ed-ink bg-white p-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 {(() => {
                   const src = uploadUrl(ev.bannerUrl);
                   return src ? (
-                    <img src={src} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                    <img src={src} alt="" className="h-14 w-14 shrink-0 border border-ed-rule object-cover" />
                   ) : (
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl">🖼️</div>
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center border border-ed-rule bg-ed-paper text-xl">Affiche</div>
                   );
                 })()}
                 <div>
-                  <p className="font-black text-slate-900">{ev.title}</p>
-                  <p className="text-sm font-bold text-slate-500">
+                  <p className="font-black text-ed-ink">{ev.title}</p>
+                  <p className="text-sm font-bold text-ed-muted">
                     {new Date(ev.eventDate).toLocaleDateString('fr-FR')} · {ev.city?.name} · {ev.price > 0 ? `${ev.price.toLocaleString('fr-FR')} HTG` : 'Gratuit'} · {ev.ticketsAvailable} restants
                   </p>
                 </div>
@@ -468,20 +468,20 @@ export default function AdminPage() {
               {ev.status === 'PUBLISHED' ? (
                 <button
                   onClick={() => setEventStatus(ev.id, 'DRAFT')}
-                  className="rounded-full bg-amber-100 px-4 py-2 text-sm font-black text-amber-700 transition hover:bg-amber-200"
+                  className="border-[1.5px] border-ed-ink px-4 py-2 text-xs font-extrabold uppercase tracking-widest text-ed-ink transition hover:bg-ed-ink hover:text-ed-paper"
                 >
-                  ⏸️ Dépublier
+                  Dépublier
                 </button>
               ) : (
                 <button
                   onClick={() => setEventStatus(ev.id, 'PUBLISHED')}
-                  className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-emerald-200"
+                  className="bg-ed-ink px-4 py-2 text-xs font-extrabold uppercase tracking-widest text-ed-paper transition hover:bg-ed-red"
                 >
-                  🚀 Publier
+                  Publier
                 </button>
               )}
-              <label className={`cursor-pointer rounded-full px-4 py-2 text-sm font-black transition ${uploadingId === ev.id ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-campy hover:bg-blue-100'}`}>
-                {uploadingId === ev.id ? "Envoi…" : "📤 Changer l'affiche"}
+              <label className={`cursor-pointer border-[1.5px] border-ed-ink px-4 py-2 text-xs font-extrabold uppercase tracking-widest transition ${uploadingId === ev.id ? 'opacity-50' : 'text-ed-ink hover:bg-ed-ink hover:text-ed-paper'}`}>
+                {uploadingId === ev.id ? "Envoi…" : "Changer l'affiche"}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -497,21 +497,21 @@ export default function AdminPage() {
               {ev.bannerUrl && (
                 <button
                   onClick={() => removeBanner(ev.id)}
-                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-500 transition hover:bg-slate-200"
+                  className="border border-ed-rule px-4 py-2 text-xs font-extrabold uppercase tracking-widest text-ed-muted transition hover:bg-ed-ink hover:text-ed-paper"
                 >
                   Retirer
                 </button>
               )}
               <button
                 onClick={() => removeEvent(ev.id, ev.title)}
-                className="rounded-full bg-red-50 px-4 py-2 text-sm font-black text-red-600 transition hover:bg-red-100"
+                className="border-[1.5px] border-ed-red px-4 py-2 text-xs font-extrabold uppercase tracking-widest text-ed-red transition hover:bg-ed-red hover:text-white"
               >
-                🗑️ Supprimer
+                Supprimer
               </button>
             </div>
           </div>
         ))}
-        {events.length === 0 && <p className="font-bold text-slate-400">Aucun événement.</p>}
+        {events.length === 0 && <p className="font-bold text-ed-muted">Aucun événement.</p>}
       </div>
     </section>
   );
